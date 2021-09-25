@@ -1,0 +1,16 @@
+{
+  "extends": "./config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "removeComments": true,
+    "sourceMap": false,
+    "declaration": true
+  },
+  "include": [
+    "./lib"
+  ],
+  "exclude": [
+    "./test",
+    "node_modules"
+  ],
+}

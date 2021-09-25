@@ -1,0 +1,42 @@
+{
+  "name": "@metis.io/middleware-client",
+  "version": "1.0.6",
+  "description": "",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "prepublish": "npm run build",
+    "dev": "rm -fr ./dist && tsc -p tsconfig.dev.json",
+    "build": "rm -fr ./dist && tsc -p tsconfig.prod.json",
+    "example": "npm run dev && node ./example/index.js",
+    "test": "ts-mocha -p ./tsconfig.test.json ./test/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MetisProtocol/middleware.git"
+  },
+  "author": "Jeff Xiao ",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MetisProtocol/middleware/issues"
+  },
+  "homepage": "https://github.com/MetisProtocol/middleware#readme",
+  "devDependencies": {
+    "@types/chai": "^4.2.18",
+    "@types/mocha": "^8.2.2",
+    "chai": "^4.3.4",
+    "mocha": "^8.4.0",
+    "ts-mocha": "^8.0.0",
+    "tslint": "^5.20.1",
+    "tslint-config-airbnb": "^5.11.2",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {
+    "@metamask/onboarding": "^1.0.1",
+    "@types/socket.io-client": "^3.0.0",
+    "axios": "^0.21.1",
+    "ethers": "^5.4.5",
+    "socket.io-client": "^4.1.2",
+    "sweetalert2": "^11.0.18"
+  }
+}
