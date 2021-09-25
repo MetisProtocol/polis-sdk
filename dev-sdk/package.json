@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MetisProtocol/middleware.git"
+    "url": "git+https://github.com/MetisProtocol/polis-sdk.git"
   },
-  "author": "Jeff Xiao ",
+  "author": "METIS",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/MetisProtocol/middleware/issues"
+    "url": "https://github.com/MetisProtocol/polis-sdk/issues"
   },
-  "homepage": "https://github.com/MetisProtocol/middleware#readme",
+  "homepage": "https://github.com/MetisProtocol/polis-sdk/tree/main/dev-sdk",
   "devDependencies": {
     "@types/chai": "^4.2.18",
     "@types/mocha": "^8.2.2",
