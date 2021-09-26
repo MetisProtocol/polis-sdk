@@ -358,7 +358,7 @@ export class HttpClient implements IHttpClient {
                 }
             }
 
-            // window.addEventListener('message', globalMessage, false);
+            window.addEventListener('message', globalMessage, false);
         });
     }
 
