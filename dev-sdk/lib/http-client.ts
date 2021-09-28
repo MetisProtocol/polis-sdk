@@ -227,89 +227,101 @@ export class HttpClient implements IHttpClient {
             'Access-Token': this.accessToken,
         };
         const r = new request(!disableTooltip);
-        await this.handleRefreshTokenAsync();
-        const res = await r.instance.post(`${this.apiHost}/api/v1/oauth2/send_tx`, {
-            chainid,
-            domain,
-            args,
-            function: fun,
-        }, {headers});
+        try {
+            await this.handleRefreshTokenAsync();
+            const res = await r.instance.post(`${this.apiHost}/api/v1/oauth2/send_tx`, {
+                chainid,
+                domain,
+                args,
+                function: fun,
+            }, {headers})
+                .then(function (res:any) {
+                    return res;
+                }, function (res:any) {
+                    return {status: res.status};
+                });
+            if (res.status === 200 && res.data && res.data.code === 200) {
+                //   return res.data.data
+                const trans = res.data.data;
+                if (trans.act && trans.act === 'SIGN') {
+                    // neet to auth from METIS or METAMASK
+                    if (trans.wallet === 'METAMASK') {
 
-        if (res.status === 200 && res.data && res.data.code === 200) {
-            //   return res.data.data
-            const trans = res.data.data;
-            if (trans.act && trans.act === 'SIGN') {
-                // neet to auth from METIS or METAMASK
-                if (trans.wallet === 'METAMASK') {
-
-                    const chainObj = await this.getChainUrl(trans.chainid);
-                    if (!disableTooltip) {
-                        this.showLoading();
-                    }
-                    const res = await metamask.sendMetaMaskContractTx(trans, chainObj);
-
-                    let savedTx: any;
-                    if (res?.success) {
-                        savedTx = await saveTx(this.apiHost, this.accessToken, 'save_app_tx', res?.data, disableTooltip);
-                        if (savedTx == null) {
-                            // server save tx error ,also return but status = IN_PROGRESSING because tx had success
-                            savedTx = {
-                                tx: res?.data.trans.txhash,
-                                status: 'SERVER_ERROR',
-                                chainid: trans.chainid,
-                                domain: trans.domain,
-                                data: 'ok',
-                                act: 'CREATE',
-                            };
-                            return new Promise<any>((resolve, reject) => {
-                                reject(savedTx);
-                            });
-                        } else {
-                            while (this.txStatus !== 'SUCCEED') {
-                                await new Promise(resolve => {
-                                    setTimeout(resolve, 2000);
-                                });
-                                savedTx = await this.queryTxAsync(chainid, res?.data.trans.txhash);
-                                if (savedTx && savedTx.status && savedTx.status === 'SUCCEED') {
-                                    this.txStatus = 'SUCCEED';
-                                }
-                            }
-                            if (!disableTooltip) {
-                                this.closeLoading();
-                            }
-                            return new Promise<any>((resolve, reject) => {
-                                resolve(savedTx);
-                            });
+                        const chainObj = await this.getChainUrl(trans.chainid);
+                        if (!disableTooltip) {
+                            this.showLoading();
                         }
-                        // return savedTx;
+                        const res = await metamask.sendMetaMaskContractTx(trans, chainObj);
+
+                        let savedTx: any;
+                        if (res?.success) {
+                            savedTx = await saveTx(this.apiHost, this.accessToken, 'save_app_tx', res?.data, disableTooltip);
+                            if (savedTx == null) {
+                                // server save tx error ,also return but status = IN_PROGRESSING because tx had success
+                                savedTx = {
+                                    tx: res?.data.trans.txhash,
+                                    status: 'SERVER_ERROR',
+                                    chainid: trans.chainid,
+                                    domain: trans.domain,
+                                    data: 'ok',
+                                    act: 'CREATE',
+                                };
+                                return new Promise<any>((resolve, reject) => {
+                                    reject(savedTx);
+                                });
+                            } else {
+                                while (this.txStatus !== 'SUCCEED') {
+                                    await new Promise(resolve => {
+                                        setTimeout(resolve, 2000);
+                                    });
+                                    savedTx = await this.queryTxAsync(chainid, res?.data.trans.txhash);
+                                    if (savedTx && savedTx.status && savedTx.status === 'SUCCEED') {
+                                        this.txStatus = 'SUCCEED';
+                                    }
+                                }
+                                if (!disableTooltip) {
+                                    this.closeLoading();
+                                }
+                                return new Promise<any>((resolve, reject) => {
+                                    resolve(savedTx);
+                                });
+                            }
+                            // return savedTx;
+                        }
+                        return new Promise<any>((resolve, reject) => reject(res?.data));
                     }
-                    return new Promise<any>((resolve, reject) => reject(res?.data));
+                    // METIS
+                    return this.beforeConfirm(trans.domain, trans.chainid, trans.eth_address, trans.contract_address, trans.function, trans.args, trans.gas, trans.gas_price, trans.fee, trans.wallet, trans.func_abi_sign);
                 }
-                // METIS
-                return this.beforeConfirm(trans.domain, trans.chainid, trans.eth_address, trans.contract_address, trans.function, trans.args, trans.gas, trans.gas_price, trans.fee, trans.wallet, trans.func_abi_sign);
+                if (trans.act && trans.act === 'SUCCESS' && !disableTooltip) {
+                    const toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        didOpen: (toast) => {
+                            toast.addEventListener('mouseenter', Swal.stopTimer)
+                            toast.addEventListener('mouseleave', Swal.resumeTimer)
+                        },
+                    });
+                    // trans.result
+                    toast.fire({
+                        icon: 'success',
+                        title: 'Smart contract submit successfully',
+                    });
+                }
+                return trans;
+            } else if (res.status === 200 && res.data) {
+                const errMsg = res.data.msg;
+                error(errMsg);
+                Promise.reject({"status":"ERROR","message":errMsg});
+            }else {
+                return Promise.reject({"status":"ERROR","message":"server error:"});
             }
-            if (trans.act && trans.act === 'SUCCESS' && !disableTooltip) {
-                const toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    didOpen: (toast) => {
-                        toast.addEventListener('mouseenter', Swal.stopTimer)
-                        toast.addEventListener('mouseleave', Swal.resumeTimer)
-                    },
-                });
-                // trans.result
-                toast.fire({
-                    icon: 'success',
-                    title: 'Smart contract submit successfully',
-                });
-            }
-            return trans;
-        } else if (res.status === 200 && res.data) {
-            const errMsg = res.data.msg;
-            error(errMsg);
+        }
+        catch (e) {
+            return Promise.reject(e.message);
         }
         return null;
     }
@@ -343,21 +355,23 @@ export class HttpClient implements IHttpClient {
             },
         });
 
-        return new Promise((resolve) => {
+        return new Promise((resolve,reject) => {
             const self = this;
-
             function globalMessage(event: any) {
                 // console.log(`event confirm: ${JSON.stringify(event.data)}`);
                 if (event.origin !== 'https://polis.metis.io' && event.origin !== 'http://localhost:1024') {
                     return;
                 }
-                if (event.data && event.data.tx) {
+                if (event.data && event.data.status) {
                     Swal.close(self.swalPromise);
-                    resolve(event.data);
+                    if (event.data.status === 'ERROR' || event.data.status === 'DECLINE') {
+                        reject(event.data);
+                    }else {
+                        resolve(event.data);
+                    }
                     window.removeEventListener('message', globalMessage, false);
                 }
             }
-
             window.addEventListener('message', globalMessage, false);
         });
     }
@@ -453,7 +467,7 @@ export class HttpClient implements IHttpClient {
                     // success result
                     toast.fire({
                         icon: 'success',
-                        title: 'Smart contract submit successfully'
+                        title: 'Smart contract submit successfully',
                     });
                 } else if (trans.status && trans.status === 'FAIED') {
                     // failed result

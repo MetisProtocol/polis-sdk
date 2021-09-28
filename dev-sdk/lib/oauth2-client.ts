@@ -73,11 +73,11 @@ export class Oauth2Client implements IOauth2Client {
             this.oauth2User!.refreshToken = res.data.data.refresh_token;
             this.oauth2User!.expriesAt = new Date().getTime() + (res.data.data.expires_in - 5) * 1000;
         }
-        else if (res.status == 200 && res.data) {
+        else if (res.status === 200 && res.data) {
             const errMsg = res.data.msg;
             console.log(errMsg);
         }
-        return (res.status == 200 && res.data && res.data.code == 200)?this.oauth2User:null;
+        return (res.status === 200 && res.data && res.data.code == 200)?this.oauth2User:null;
     }
 
     async getUserInfoAsync(accessToken?: string): Promise<any> {

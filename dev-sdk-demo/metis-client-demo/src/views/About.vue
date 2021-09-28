@@ -266,8 +266,8 @@
                     args).then((trans) => {
                             this.contract.result = JSON.stringify(trans);
                          },(reject)=>{
-                    this.contract.result = JSON.stringify(reject);
-                    console.log("reject:" + JSON.stringify(reject))
+                            this.contract.result = "reject:" + JSON.stringify(reject);
+                            console.log("reject:" + JSON.stringify(reject))
                          })
                 // this.httpclient.sendTx('ystoken', 1337, 'balanceOf', ['0x497D4c0457aedd62a1cb381F86e0DAbf0f2aAB10'])
             },

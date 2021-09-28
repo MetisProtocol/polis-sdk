@@ -20,7 +20,7 @@ class Service{
     constructor(isShowDialog:boolean = true) {
         this.isShowDialog = isShowDialog;
         let request = axios.create({
-            timeout: 50000
+            timeout: 50000,
         });
 
         request.interceptors.request.use( (config) => {
@@ -29,20 +29,18 @@ class Service{
             },
             (error) => {
                 this.closeDialog();
-                Promise.reject(error);
+                Promise.reject({"status":"ERROR","message":error});
             },
         );
 
         request.interceptors.response.use(
             (res) => {
-                if (isShowDialog) {
-                    this.closeDialog();
-                }
+                this.closeDialog();
                 return res;
             },
             (error) => {
                 this.closeDialog();
-                return Promise.reject(error.response);
+                return Promise.reject({"status":"ERROR","message":error.message});
             },
         );
         this.instance = request;
@@ -61,7 +59,7 @@ class Service{
    }
 
     closeDialog() {
-       if (!this.isShowDialog) {
+       if (this.isShowDialog) {
            this.loadingDialog.close();
        }
     }
