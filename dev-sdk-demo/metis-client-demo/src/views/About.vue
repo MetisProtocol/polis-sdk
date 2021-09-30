@@ -259,6 +259,7 @@
 
                 if(this.contract.args.length>0)
                    args = this.contract.args.split(",");
+                debugger;
                 this.httpclient.sendTxAsync(
                     this.contract.domain,
                     parseInt(this.chainid),

@@ -246,13 +246,13 @@ export class HttpClient implements IHttpClient {
                 if (trans.act && trans.act === 'SIGN') {
                     // neet to auth from METIS or METAMASK
                     if (trans.wallet === 'METAMASK') {
-
+                        this.txStatus = '';
                         const chainObj = await this.getChainUrl(trans.chainid);
                         if (!disableTooltip) {
                             this.showLoading();
                         }
                         const res = await metamask.sendMetaMaskContractTx(trans, chainObj);
-
+                        console.log('metamak',res);
                         let savedTx: any;
                         if (res?.success) {
                             savedTx = await saveTx(this.apiHost, this.accessToken, 'save_app_tx', res?.data, disableTooltip);
@@ -274,7 +274,7 @@ export class HttpClient implements IHttpClient {
                                     await new Promise(resolve => {
                                         setTimeout(resolve, 2000);
                                     });
-                                    savedTx = await this.queryTxAsync(chainid, res?.data.trans.txhash);
+                                    savedTx = await this.queryTxAsync(chainid, res?.data.trans.txhash, disableTooltip);
                                     if (savedTx && savedTx.status && savedTx.status === 'SUCCEED') {
                                         this.txStatus = 'SUCCEED';
                                     }
@@ -442,7 +442,8 @@ export class HttpClient implements IHttpClient {
             'Access-Token': this.accessToken
         };
         await this.handleRefreshToken();
-        const res = await axios.post(this.apiHost + `/api/v1/oauth2/query_tx`, {
+        const r = new request(!disableTooltip);
+        const res = await r.instance.post(this.apiHost + `/api/v1/oauth2/query_tx`, {
             chainid,
             tx,
         }, {headers});

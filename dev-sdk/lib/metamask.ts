@@ -229,8 +229,13 @@ export async function sendMetaMaskContractTx(trans: any, chain:any) {
         return {success:true, data: transRes };
 
     } catch (e) {
+        let errMsg = e.message;
+        if ( e.data ) {
+            errMsg += '|' + e.data.message;
+        }
+        console.log('meta error',e);
         error(`MetaMask Transfer Error ${e.message}`); // "MetaMask Connect Error,Please try again.",
-        return {success:false, data: e.message };
+        return {success:false, data: errMsg };
     }
 
     return {success:false, data: 'not defined error' };
