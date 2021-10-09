@@ -344,10 +344,11 @@ export class HttpClient implements IHttpClient {
         };
         const confirmUrl = this.confirmUrl;
         Swal.fire({
-            title: 'Confirm your submit',
+            title: '<span style="font-size: 24px;font-weight: bold;color: #FFFFFF;font-family: Helvetica-Bold, Helvetica">Confirming your Submission</span>',
             html: `<iframe src="${this.confirmUrl}" style="width: 100%; height: 480px;" frameborder="0" id="metisConfirmIframe"></iframe>`,
             width: '720px',
             showConfirmButton: false,
+            background: '#00008E',
             didOpen: (dom) => {
                 document.getElementById('metisConfirmIframe')!.onload = function () {
                     (document.getElementById('metisConfirmIframe') as HTMLIFrameElement).contentWindow!.postMessage(transObj, confirmUrl.split('/#')[0]);
@@ -508,8 +509,13 @@ export class HttpClient implements IHttpClient {
     }
 }
 
-function error(msg: string): void {
+function error(msg: any): void {
     console.log(`msg:${msg}`);
+    let errMsg = msg;
+    if (typeof(msg) === 'object' && msg.message) {
+        errMsg = msg.message;
+    }
+
     const toast = Swal.mixin({
         toast: true,
         position: 'top-end',
@@ -524,7 +530,7 @@ function error(msg: string): void {
 
     toast.fire({
         icon: 'error',
-        title: msg || 'Some errors occured',
+        title: errMsg || 'Some errors occured',
     });
 }
 
