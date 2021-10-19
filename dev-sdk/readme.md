@@ -170,3 +170,18 @@ The `APPID` and `RETURN URL` can get from Polis Developer User page
         }
       ]
 ```
+
+### get Domain
+```
+ httpClient.getDomain(`DOMAIN_NAME`,`CHAIN_ID`).then((trans) => {
+        /**
+        {
+                "chainid": "435",
+                "contract_address": "0x8e1de235c87rewrewredf8c16e42f8eb1da8d1",
+                "name": "test1"
+            }
+        */
+        console.log(balance)
+        
+    })
+```

@@ -293,7 +293,7 @@ export class WebSocketClient implements IWebsocketClient {
             const self = this;
 
             function globalMessage(event: any) {
-                console.log('eee', event)
+                // console.log('eee', event)
                 if (event.origin !== "https://rocket.metis.io" && event.origin !== "https://polis.metis.io" && event.origin !== "http://localhost:1024")
                     return;
                 if (event.data && event.data.tx) {
@@ -355,7 +355,7 @@ export class WebSocketClient implements IWebsocketClient {
             try{
                 this.confirmArray.splice(ix, 1);
             }
-            catch(x){
+            catch(x:any){
                 this.log(x.message)
             }
         }

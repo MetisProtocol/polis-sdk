@@ -1,6 +1,6 @@
 {
   "name": "@metis.io/middleware-client",
-  "version": "1.0.10",
+  "version": "1.0.13",
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -36,7 +36,7 @@
     "@types/socket.io-client": "^3.0.0",
     "axios": "^0.21.1",
     "ethers": "^5.4.5",
-    "socket.io-client": "^4.1.2",
+    "socket.io-client": "4.1.2",
     "sweetalert2": "^11.0.18"
   }
 }

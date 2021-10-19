@@ -14,7 +14,7 @@ describe('Check if websocket works', () => {
         const refreshToken = '8e78546db5fc43eeaddda10ae29b0c1c';
         let websocket: IWebsocketClient = new WebSocketClient(appId, accessToken, refreshToken);
         let isInit = websocket.connect((...args:any[])=>{
-            console.log('emit', args, args.length);
+            // console.log('emit', args, args.length);
             let trans = args[0];
 
         }, (...args:any[]) => {

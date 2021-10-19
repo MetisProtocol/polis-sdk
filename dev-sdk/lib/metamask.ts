@@ -1,6 +1,7 @@
 import MetaMaskOnboarding from '@metamask/onboarding';
 import {ethers} from 'ethers';
 import Swal from 'sweetalert2';
+import errData  from "./error";
 
 const onboarding = new MetaMaskOnboarding();
 const meta_storage_key = 'meta_address';
@@ -46,7 +47,8 @@ async function addChain(chainid:number, chain:any) {
         await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [{
-                chainId: ethChain, chainName: chain.name, nativeCurrency: {
+                chainId: ethChain, chainName: chain.name,
+                nativeCurrency: {
                     name: '',
                     symbol: chain.symbol, // 2-6 characters long
                     decimals: 18,
@@ -55,7 +57,7 @@ async function addChain(chainid:number, chain:any) {
             }],
         });
         return true;
-    } catch (addError) {
+    } catch (addError:any) {
         // "MetaMask Connect Error,Please try again.",
         error(addError.message);
     }
@@ -72,7 +74,7 @@ export async function changeChain(chainid:number, chain:any) {
             params: [{chainId: eth_chainid}],
         });
         return true;
-    } catch (switchError) {
+    } catch (switchError:any) {
         // This error code indicates that the chain has not been added to MetaMask.
         if (switchError.code === 4902) {
             const addRes = await addChain(chainid, chain);
@@ -120,7 +122,7 @@ export async function getMetaAccounts() {
                 isConnectedMetaMask = true;
             }
         }
-        catch (e) {
+        catch (e:any) {
             if (e.code === -32002) {
                 error('Already processing connecting metamask. Please open or unlock Metamask .', 'info');
             }else {
@@ -192,7 +194,7 @@ export async function sendMetaMaskContractTx(trans: any, chain:any) {
         isok = await  changeChain(trans.chainid, chain);
     }
     if (!isok) {
-        return null;
+        return { success:false, code: errData.MM_SWITCH_CHAIN_CANCEL, data: "chain is error " };
     }
 
     try {
@@ -228,14 +230,14 @@ export async function sendMetaMaskContractTx(trans: any, chain:any) {
         };
         return {success:true, data: transRes };
 
-    } catch (e) {
+    } catch (e:any) {
         let errMsg = e.message;
-        if ( e.data ) {
+        if (e.data) {
             errMsg += '|' + e.data.message;
         }
-        console.log('meta error',e);
+        console.log('meta error', e);
         error(`MetaMask Transfer Error ${e.message}`); // "MetaMask Connect Error,Please try again.",
-        return {success:false, data: errMsg };
+        return {success:false,code: errData.MM_ERROR, data: errMsg };
     }
 
     return {success:false, data: 'not defined error' };
