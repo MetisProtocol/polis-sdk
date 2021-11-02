@@ -5,6 +5,11 @@
             false
         ],
         "max-line-length": false,
-        "quotemark": [true, "single", "jsx-double"]
+        "quotemark": [true, "single", "jsx-double"],
+        "ter-indent": [false],
+        "indent": [true,"spaces",4],
+//        "match-default-export-name": [true],
+//        "func-name-matching": [false],
+        "import-name": false
     }
 }

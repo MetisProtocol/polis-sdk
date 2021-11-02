@@ -1,4 +1,4 @@
-declare  interface Window {
-  ethereum:any;
-  parseInt:(number,number)=>{}
+declare interface Window {
+  ethereum: any;
+  parseInt: (number, number) => {};
 }

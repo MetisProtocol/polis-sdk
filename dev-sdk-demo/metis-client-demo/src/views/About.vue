@@ -49,11 +49,16 @@
               method:
               <el-input placeholder="method" v-model="contract.method"/>
               <br/>
+              value:
+              <el-input placeholder="method" v-model="value"/>
+              <br/>
               args:
               <el-input type="textarea" rows="4" v-model="contract.args"></el-input>
               result:
               <el-input type="textarea" rows="4" v-model="contract.result"></el-input>
               <el-button type="primary" @click="handleCallContractByHttp">HTTP: Test call smart contract
+              </el-button>
+              <el-button type="primary" @click="handleCallestimateGas">HTTP: Test call estimateGas
               </el-button>
             </el-card>
           </el-col>
@@ -64,6 +69,8 @@
               </div>
               chainId:
               <el-input v-model="chainid"/>
+              address:
+              <el-input v-model="balanceAddress"/>
               balance:
               <el-input :disabled="true" v-model="balance"/>
               <el-button type="primary" v-if="accessToken" @click="getBalance">HTTP: getBalance MET
@@ -145,19 +152,25 @@ export default {
       wsConnected: false,
       httpclient: null,
       oauth2Client: null,
+      showFreshBtn:true,
+      balanceAddress:'',
       method:"",
       chainid: 4,
       balance: 0,
       address: "0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4",
       result: "",
       userInfo: "",
+      value:"",
       methods:[{ value:"getdomain",label:"getdomain"}],
       methodResult:"",
       contract: {
-        domain: "test1",
+        domain: "test20",
+        // domain: "l1bridge-666",
+        // method: "depositERC20",
         method: "transfer",
         address: "",
         args: "0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4,100000000",
+        // args: "0xe552fb52a4f19e44ef5a967632dbc320b0820639,0x4200000000000000000000000000000000000006,10000000,3200,",
         // args:"1000000000,0x507d2C5444Be42A5e7Bd599bc370977515B7353F",
         result: ""
       },
@@ -222,6 +235,10 @@ export default {
               this.initHttpClient()
             } else if (res.status == 200 && res.data) {
               this.errMsg = res.data.msg
+              this.showFreshBtn = false;
+            }
+            else {
+              this.showFreshBtn = false;
             }
           })
     },
@@ -279,7 +296,29 @@ export default {
 
       if (this.contract.args.length > 0)
         args = this.contract.args.split(",");
+      const value = this.value;
       this.httpclient.sendTxAsync(
+          this.contract.domain,
+          parseInt(this.chainid),
+          this.contract.method,
+          args).then((trans) => {
+        this.contract.result = JSON.stringify(trans);
+      }, (reject) => {
+        this.contract.result = "reject:" + JSON.stringify(reject);
+        console.log("reject:" + JSON.stringify(reject))
+      })
+      // this.httpclient.sendTx('ystoken', 1337, 'balanceOf', ['0x497D4c0457aedd62a1cb381F86e0DAbf0f2aAB10'])
+    },
+    async handleCallestimateGas() {
+      if (!this.httpclient) {
+        alert('httpclient not init')
+        return;
+      }
+      let args = null;
+
+      if (this.contract.args.length > 0)
+        args = this.contract.args.split(",");
+      this.httpclient.estimateGasAsync(
           this.contract.domain,
           parseInt(this.chainid),
           this.contract.method,
@@ -293,9 +332,11 @@ export default {
     },
     getBalance() {
       let dom = this;
-      this.httpclient.getBalance(this.chainid).then(res => {
+      this.httpclient.getBalance(this.chainid,this.balanceAddress).then(res => {
         this.balance = (res);
         console.log("balance:" + this.balance)
+      },res=>{
+        console.log("get balance error:" , res)
       })
     },
     async getUserInfo() {

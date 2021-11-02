@@ -65,8 +65,13 @@ The `APPID` and `RETURN URL` can get from Polis Developer User page
 ```
 
 ### send transaction
-    // if DISABLE_TOOLTIP = true, sdk will not show error and success message at right top on page
-    httpClient.sendTxAsync().(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS, DISABLE_TOOLTIP?).then((trans) => {
+```javascript
+ // EXTEND_PARAMS = {
+//    value: '0'
+//    disableTooltip:  if DISABLE_TOOLTIP = true, sdk will not show error and success message at right top on page
+
+// }
+    httpClient.sendTxAsync().(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS,EXTEND_PARAMS?).then((trans) => {
         if(!trans) {
           return
         }
@@ -82,8 +87,49 @@ The `APPID` and `RETURN URL` can get from Polis Developer User page
         "erc20",
         "data":"ok",
         "act":"CREATE"
-    }\
+    }
+```
+   
 ###
+
+### estimateGasAsync
+```javascript
+ /*
+ EXTEND_PARAMS = {
+    value: '0'
+    disableTooltip:  if DISABLE_TOOLTIP = true, sdk will not show error and success message at right top on page
+  }
+}*/
+httpClient.estimateGasAsync(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS, EXTEND_PARAMS?)
+    .then((trans) => {
+            if(!trans) {
+            return
+            }
+            console.log(trans)
+})
+//trans struct
+{
+    "act": "SIGN",
+    "args": [
+        "0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4",
+        "100000000"
+        ],
+    "chainid": 4,
+    "contract_address": "0x8e1de235c879ca7b6bda3df8c16e42f8eb1da8d1",
+    "data": "ok",
+    "domain": "test1",
+    "eth_address": "0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4",
+    "fee": "0.00003637 Metis",
+    "fee_num": "0.00003637",
+    "func_abi_sign": "function transfer(address recipient,uint256 amount) nonpayable returns (bool )",
+    "function": "transfer",
+    "gas": "33060",
+    "gas_price": "1099995892 wei",
+    "gas_price_num": "1099995892",
+    "nonce": 0,
+    "wallet": ""
+}
+```
 
 ### query transaction
 ```
