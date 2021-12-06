@@ -17,8 +17,13 @@ npm install --save-dev @metis.io/middleware-client
 ```
 
 ### start oauth
-```
-   oauth2Client.startOauth2(`APPID`, `RETURN URL`); 
+```javascript
+/**
+ * switchAccount = true:  Does not automatically log in,default:false
+ * newWindow: default false
+ */
+
+oauth2Client.startOauth2(`APPID`, `RETURN URL`, `newWindow`,`switchAccount`); 
 ```
 The `APPID` and `RETURN URL` can get from Polis Developer User page
 
@@ -54,6 +59,22 @@ The `APPID` and `RETURN URL` can get from Polis Developer User page
     }
 ```
 
+### oauth logout
+```javascript
+ logout(appId:string, accessToken:string, refreshToken:string).then(res=>{
+    //res = {
+    //     status: 0
+    //     msg: ""
+    // }
+})
+.catch(res=>{
+    // res = {
+    //     status: 100003
+    //     msg: ""
+    // }
+})
+```
+
 
 ## Http client
 
@@ -66,12 +87,12 @@ The `APPID` and `RETURN URL` can get from Polis Developer User page
 
 ### send transaction
 ```javascript
+//    disableTooltip:  if DISABLE_TOOLTIP = true, sdk will not show error and success message at right top on page
  // EXTEND_PARAMS = {
 //    value: '0'
-//    disableTooltip:  if DISABLE_TOOLTIP = true, sdk will not show error and success message at right top on page
 
 // }
-    httpClient.sendTxAsync().(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS,EXTEND_PARAMS?).then((trans) => {
+    httpClient.sendTxAsync().(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS, DISABLETOOLTIP?, EXTEND_PARAMS?).then((trans) => {
         if(!trans) {
           return
         }
@@ -100,7 +121,7 @@ The `APPID` and `RETURN URL` can get from Polis Developer User page
     disableTooltip:  if DISABLE_TOOLTIP = true, sdk will not show error and success message at right top on page
   }
 }*/
-httpClient.estimateGasAsync(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS, EXTEND_PARAMS?)
+httpClient.estimateGasAsync(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS, DISABLETOOLTIP?, EXTEND_PARAMS?)
     .then((trans) => {
             if(!trans) {
             return
@@ -231,3 +252,25 @@ httpClient.estimateGasAsync(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS, EX
         
     })
 ```
+
+### providerCall
+
+```javascript
+/**
+ *
+ * @param param
+ * {
+ *     method: "get_block_number",  //method name
+ *     args: {}||[]                   //method args array
+ *     chainid: 4,
+ * }
+ */
+httpclient.providerCall(param).then(res => {
+    /**
+     *  {
+     *      result: "9611837"
+     *  }
+     */
+})
+```
+

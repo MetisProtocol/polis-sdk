@@ -6,6 +6,7 @@
     </div>
     <div>
       <div v-if="accessToken">
+        <button type="button" @click="logout">Logout</button>
 
         <el-row :gutter="20">
           <el-col :span="6">
@@ -32,6 +33,22 @@
               </el-select>
               <el-input type="textarea" rows="4" v-model="methodResult"/>
               <el-button type="primary" @click="callOauthMethod">Call
+              </el-button>
+            </el-card>
+
+            <el-card class="box-card">
+              <div slot="header" class="clearfix">
+                <span>OAUTH ETH CALL</span>
+              </div>
+              method:
+              <el-input placeholder="method" v-model="ethcallmethod"/>
+              chainid:
+              <el-input placeholder="chainid" v-model="chainid"/>
+              args:
+              <el-input type="textarea" rows="4" v-model="ethcallargs"/>
+              result:
+              <el-input type="textarea" rows="4" v-model="ethCallResult"/>
+              <el-button type="primary" @click="oauthEthCall">Call
               </el-button>
             </el-card>
           </el-col>
@@ -154,6 +171,8 @@ export default {
       oauth2Client: null,
       showFreshBtn:true,
       balanceAddress:'',
+      ethcallmethod:'get_block_number',
+      ethcallargs:'',
       method:"",
       chainid: 4,
       balance: 0,
@@ -163,8 +182,9 @@ export default {
       value:"",
       methods:[{ value:"getdomain",label:"getdomain"}],
       methodResult:"",
+      ethCallResult:"",
       contract: {
-        domain: "test20",
+        domain: "test1",
         // domain: "l1bridge-666",
         // method: "depositERC20",
         method: "transfer",
@@ -193,11 +213,22 @@ export default {
       }
     }, false);
   },
+
   mounted() {
     this.code = this.$route.query.code || ''
     this.getAccessToken()
   },
   methods: {
+    logout(){
+      // window.open( 'http://localhost:1024/#/oauth2-logout','','height=200,width=200,top=-100,left=-100');
+
+      this.oauth2Client.logout(this.appid,this.accessToken,this.refreshToken).then(res=>{
+        console.log("logout success:",res)
+      })
+      .catch(res=>{
+        console.log("logout error:",res)
+      })
+    },
     goRefreshToken() {
       let refresh_token = localStorage.getItem("refresh-token");
       // axios.get(`https://polis.metis.io/api/v1/oauth2/access_token?app_id=${this.appid}&app_key=${this.appsecret}&code=${this.code}`)
@@ -301,7 +332,7 @@ export default {
           this.contract.domain,
           parseInt(this.chainid),
           this.contract.method,
-          args).then((trans) => {
+          args,false,{value}).then((trans) => {
         this.contract.result = JSON.stringify(trans);
       }, (reject) => {
         this.contract.result = "reject:" + JSON.stringify(reject);
@@ -373,6 +404,20 @@ export default {
             })
             break;
       }
+    },
+    oauthEthCall(){
+      let args = null;
+      if (this.ethcallargs.length > 0)
+        args = this.ethcallargs.split(",");
+      const param = {
+        chainid: this.chainid,
+        method: this.ethcallmethod,
+        args:args
+      }
+      this.httpclient.providerCall(param).then(res => {
+        this.ethCallResult = JSON.stringify(res);
+        console.log("methodResult:" + this.ethCallResult)
+      })
     }
   }
 }
@@ -382,4 +427,8 @@ export default {
 .el-button {
   margin-top: 10px;
 }
+.about {
+  background-color: beige;
+}
+
 </style>

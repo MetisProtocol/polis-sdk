@@ -176,13 +176,12 @@ export async function sendMetaMaskContractTx(trans: any, chain: any) {
   // 1.check meta install
   const metaAddr: any = await getMetaAccounts();
   if (metaAddr === '') {
-    // error('Please connect to Metamask Wallet or Unlock Metamask.');
     return null;
   }
   // 2.check account
   if (fromAddrees.toLocaleLowerCase() !== metaAddr.toLocaleLowerCase().replaceAll('"', '')) {
-    error(`Invalid MetaMask address, it should be: ${fromAddrees}`); // "MetaMask Connect Error,Please try again.",
-    return null;
+    // error(); // "MetaMask Connect Error,Please try again.",
+    return {success: false, code: errData.MM_ACCOUNT_NOT_MATCH, data: `Invalid MetaMask address, it should be: ${fromAddrees}`};
   }
   // 3.check network
   const curMetaChain = await getCurChainId();
@@ -204,7 +203,10 @@ export async function sendMetaMaskContractTx(trans: any, chain: any) {
     const contract = new ethers.Contract(daiAddress, daiAbi, provider);
     const daiWithSigner = contract.connect(signer);
     // const txHash = await  contract[trans.function](trans.args);
-    const metaTx = await daiWithSigner[trans.function](...trans.args);
+    const overrides = {
+      value: trans.value,
+    };
+    const metaTx = await daiWithSigner[trans.function](...trans.args, overrides);
     const gasLimit = metaTx['gasLimit']['_hex'];
     const gasPrice = metaTx['gasPrice']['_hex'];
     const nonce = metaTx['nonce'];

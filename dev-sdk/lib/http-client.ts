@@ -216,11 +216,7 @@ export class HttpClient implements IHttpClient {
         });
     }
 
-    async estimateGasAsync(domain: string, chainid: number, fun: string, args?: any[], extendParams: any = null): Promise<any> {
-        let disableTooltip = false;
-        if (extendParams && !!extendParams['disableTooltip']) {
-            disableTooltip = extendParams['disableTooltip'];
-        }
+    async estimateGasAsync(domain: string, chainid: number, fun: string, args?: any[], disableTooltip:boolean = false, extendParams: any = null): Promise<any> {
         const r = new request(!disableTooltip);
         try {
             await this.handleRefreshTokenAsync();
@@ -234,6 +230,7 @@ export class HttpClient implements IHttpClient {
                 args,
                 estimateGas: true,
                 function: fun,
+                extendParams: extendParams,
             }, {headers})
             if (res.status === 200 && res.data && res.data.code === 200) {
                 //   return res.data.data
@@ -253,12 +250,11 @@ export class HttpClient implements IHttpClient {
     }
 
     // @ts-ignore
-    async sendTxAsync(domain: string, chainid: number, fun: string, args?: any[], extendParams: any = null): Promise<any> {
-        let disableTooltip = false;
-        if (extendParams&&!!extendParams['disableTooltip']) {
-            disableTooltip = extendParams['disableTooltip'];
+    async sendTxAsync(domain: string, chainid: number, fun: string, args?: any[], disableTooltip:boolean = false, extendParams: any = null): Promise<any> {
+        if (!disableTooltip) {
+            this.showLoading();
         }
-        const r = new request(!disableTooltip);
+        const r = new request(false);
 
         try {
             await this.handleRefreshTokenAsync();
@@ -286,14 +282,12 @@ export class HttpClient implements IHttpClient {
                     if (trans.wallet === 'METAMASK') {
                         this.txStatus = '';
                         const chainObj = await this.getChainUrl(trans.chainid);
-                        if (!disableTooltip) {
-                            this.showLoading();
-                        }
+
                         const res = await metamask.sendMetaMaskContractTx(trans, chainObj);
                         console.log('metamak', res);
                         let savedTx: any;
                         if (res?.success) {
-                            savedTx = await saveTx(this.apiHost, this.accessToken, 'save_app_tx', res?.data, disableTooltip);
+                            savedTx = await saveTx(this.apiHost, this.accessToken, 'save_app_tx', res?.data, true);
                             if (savedTx == null) {
                                 // server save tx error ,also return but status = IN_PROGRESSING because tx had success
                                 savedTx = {
@@ -309,13 +303,19 @@ export class HttpClient implements IHttpClient {
                                     reject(savedTx);
                                 });
                             }
-                            while (this.txStatus !== 'SUCCEED') {
+                            while (this.txStatus !== 'SUCCEED' && this.txStatus !== 'FAILED') {
                                 await new Promise(resolve => {
                                     setTimeout(resolve, 2000);
                                 });
-                                savedTx = await this.queryTxAsync(chainid, res?.data.trans.txhash, disableTooltip);
-                                if (savedTx && savedTx.status && savedTx.status === 'SUCCEED') {
-                                    this.txStatus = 'SUCCEED';
+                                savedTx = await this.queryTxAsync(chainid, res?.data.trans.txhash, true);
+                                if (savedTx && savedTx.status && (savedTx.status === 'SUCCEED' || savedTx.status === 'FAILED')) {
+                                    this.txStatus = savedTx.status;
+                                    if (savedTx.status === 'FAILED') {
+                                        if (!disableTooltip) {
+                                            this.closeLoading();
+                                        }
+                                        return Promise.reject(savedTx);
+                                    }
                                 }
                             }
                             if (!disableTooltip) {
@@ -324,10 +324,12 @@ export class HttpClient implements IHttpClient {
                             return new Promise<any>((resolve, reject) => {
                                 resolve(savedTx);
                             });
-
-                            // return savedTx;
                         }
-                        if (!disableTooltip) {
+                        else {
+                            error(res?.data);
+                            return Promise.reject(res);
+                        }
+                        if (res != null && !disableTooltip) {
                             this.closeLoading();
                         }
                         return new Promise<any>((resolve, reject) => reject(res));
@@ -368,8 +370,7 @@ export class HttpClient implements IHttpClient {
         return null;
     }
 
-    // @ts-ignore
-    async beforeConfirm(domain: string, chainid: number, from: string, address: string, fun: string, args?: any[], gas?: string, gasPrice?: string, fee?: string, wallet?: string, funcAbiSign?: string, value: string): Promise<any> {
+    async beforeConfirm(domain: string, chainid: number, from: string, address: string, fun: string, args?: any[], gas?: string, gasPrice?: string, fee?: string, wallet?: string, funcAbiSign?: string, value?: string): Promise<any> {
         // open a dialog
         const transObj = {
             domain,
@@ -552,12 +553,26 @@ export class HttpClient implements IHttpClient {
         return await this.post('domains', {name, chainid});
     }
 
+    /**
+     *
+     * @param param
+     * {
+     *     method: "",
+     *     args: {}
+     *     chainid: 4,
+     * }
+     */
+    async providerCall(param:any): Promise<any> {
+        return await this.post('eth_call', param);
+    }
+
     showLoading() {
         this.loadingDialog.fire({
             html: 'Processing...',
             didOpen: () => {
                 Swal.showLoading();
             },
+            allowOutsideClick:false,
         });
     }
 
