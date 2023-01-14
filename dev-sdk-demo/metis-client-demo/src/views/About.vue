@@ -6,14 +6,23 @@
     </div>
     <div>
       <div v-if="accessToken">
-        <button type="button" @click="logout">Logout</button>
-
+        <button type="button" @click="logout">Log Out</button>
+        <button type="button" @click="testDAC">testDAC</button>
+        <div>
+          Bridge MetaMask:<el-switch
+            v-model="bridgeMetaMask"
+            active-color="#13ce66"
+            inactive-color="#ff4949">
+        </el-switch>
+        </div>
         <el-row :gutter="20">
           <el-col :span="6">
             <el-card class="box-card">
               <div slot="header" class="clearfix">
                 <span>WS Test Call Smart Contract</span>
               </div>
+              <el-button type="primary" @click="addToken">Add token
+              </el-button>
               <el-button type="primary" @click="handleCallContract">WS: Test call smart contract
               </el-button>
             </el-card>
@@ -147,6 +156,7 @@
 import axios from 'axios'
 import {WebSocketClient, HttpClient, Oauth2Client} from '@metis.io/middleware-client'
 import Swal from 'sweetalert2';
+import {ethers} from 'ethers'
 
 /**
  * Warning: this page is just a demo
@@ -156,8 +166,10 @@ import Swal from 'sweetalert2';
 export default {
   data() {
     return {
+      bridgeMetaMask:true,
       appid: process.env.VUE_APP_APP_ID,
       appsecret: process.env.VUE_APP_APP_SECRET,
+      apiHost: process.env.VUE_APP_API_HOST,
       // appid: "611cc74139481700e8885bc5",
       // appsecret: "40133e2b4a0e4dadbb4a867e2494c152",
       code: '',
@@ -169,20 +181,20 @@ export default {
       wsConnected: false,
       httpclient: null,
       oauth2Client: null,
-      showFreshBtn:true,
-      balanceAddress:'',
-      ethcallmethod:'get_block_number',
-      ethcallargs:'',
-      method:"",
-      chainid: 4,
+      showFreshBtn: true,
+      balanceAddress: '',
+      ethcallmethod: 'get_block_number',
+      ethcallargs: '',
+      method: "",
+      chainid: 599,
       balance: 0,
       address: "0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4",
       result: "",
       userInfo: "",
-      value:"",
-      methods:[{ value:"getdomain",label:"getdomain"}],
-      methodResult:"",
-      ethCallResult:"",
+      value: "",
+      methods: [{value: "getdomain", label: "getdomain"}],
+      methodResult: "",
+      ethCallResult: "",
       contract: {
         domain: "test1",
         // domain: "l1bridge-666",
@@ -206,35 +218,29 @@ export default {
   },
   created() {
     //NOTE get confirm tx
-    window.addEventListener("message", (event) => {
-      if (event.data && event.data.tx) {
-        // TODO here
-        // console.log(`tx callback ${event.data.tx}`)
-      }
-    }, false);
   },
 
   mounted() {
     this.code = this.$route.query.code || ''
-    this.getAccessToken()
+    this.getAccessToken();
+
   },
   methods: {
-    logout(){
+    logout() {
       // window.open( 'http://localhost:1024/#/oauth2-logout','','height=200,width=200,top=-100,left=-100');
 
-      this.oauth2Client.logout(this.appid,this.accessToken,this.refreshToken).then(res=>{
-        console.log("logout success:",res)
+      this.oauth2Client.logout(this.appid, this.accessToken, this.refreshToken).then(res => {
+        console.log("logout success:", res)
       })
-      .catch(res=>{
-        console.log("logout error:",res)
-      })
+          .catch(res => {
+            console.log("logout error:", res)
+          })
     },
     goRefreshToken() {
       let refresh_token = localStorage.getItem("refresh-token");
       // axios.get(`https://polis.metis.io/api/v1/oauth2/access_token?app_id=${this.appid}&app_key=${this.appsecret}&code=${this.code}`)
       axios.get(process.env.VUE_APP_TOKEN_URL + `/api/v1/oauth2/refresh_token?app_id=${this.appid}&app_key=${this.appsecret}&refresh_token=${refresh_token}`)
           .then(res => {
-            console.log(res)
             if (res.status == 200 && res.data && res.data.code == 200) {
               this.accessToken = res.data.data.access_token
               this.refreshToken = res.data.data.refresh_token
@@ -255,20 +261,18 @@ export default {
       // axios.get(`https://polis.metis.io/api/v1/oauth2/access_token?app_id=${this.appid}&app_key=${this.appsecret}&code=${this.code}`)
       axios.get(process.env.VUE_APP_TOKEN_URL + `/api/v1/oauth2/access_token?app_id=${this.appid}&app_key=${this.appsecret}&code=${this.code}`)
           .then(res => {
-            console.log(res)
             if (res.status == 200 && res.data && res.data.code == 200) {
               this.accessToken = res.data.data.access_token
               this.refreshToken = res.data.data.refresh_token
               localStorage.setItem("refresh-token", this.refreshToken)
               this.expiresIn = res.data.data.expires_in
-
               this.initWebsocket()
               this.initHttpClient()
+
             } else if (res.status == 200 && res.data) {
               this.errMsg = res.data.msg
               this.showFreshBtn = false;
-            }
-            else {
+            } else {
               this.showFreshBtn = false;
             }
           })
@@ -300,14 +304,8 @@ export default {
       });
     },
     initHttpClient() {
-      if (process.env.NODE_ENV == "dev") {
-        this.httpclient = new HttpClient(this.appid, this.accessToken, this.refreshToken, this.expiresIn, "", "test");
-        this.oauth2Client = new Oauth2Client('test');
-      } else {
-        this.oauth2Client = new Oauth2Client();
-        this.httpclient = new HttpClient(this.appid, this.accessToken, this.refreshToken, this.expiresIn);
-      }
-
+        this.oauth2Client = new Oauth2Client(this.apiHost);
+        this.httpclient = new HttpClient(this.appid, this.accessToken, this.refreshToken, this.expiresIn,this.apiHost,this.bridgeMetaMask);
     },
     handleCallContract() {
       if (!this.wsConnected) {
@@ -332,7 +330,7 @@ export default {
           this.contract.domain,
           parseInt(this.chainid),
           this.contract.method,
-          args,false,{value}).then((trans) => {
+          args, false, {value}).then((trans) => {
         this.contract.result = JSON.stringify(trans);
       }, (reject) => {
         this.contract.result = "reject:" + JSON.stringify(reject);
@@ -363,11 +361,11 @@ export default {
     },
     getBalance() {
       let dom = this;
-      this.httpclient.getBalance(this.chainid,this.balanceAddress).then(res => {
+      this.httpclient.getBalance(this.chainid, this.balanceAddress).then(res => {
         this.balance = (res);
         console.log("balance:" + this.balance)
-      },res=>{
-        console.log("get balance error:" , res)
+      }, res => {
+        console.log("get balance error:", res)
       })
     },
     async getUserInfo() {
@@ -395,30 +393,75 @@ export default {
         console.log(res);
       })
     },
-    callOauthMethod(){
+    callOauthMethod() {
       switch (this.method) {
-          case "getdomain":
-            this.httpclient.getDomain("test1","435").then(res => {
-              this.methodResult = JSON.stringify(res);
-              console.log("methodResult:" + this.methodResult)
-            })
-            break;
+        case "getdomain":
+          this.httpclient.getDomain("test1", "435").then(res => {
+            this.methodResult = JSON.stringify(res);
+            console.log("methodResult:" + this.methodResult)
+          })
+          break;
       }
     },
-    oauthEthCall(){
+    oauthEthCall() {
       let args = null;
       if (this.ethcallargs.length > 0)
         args = this.ethcallargs.split(",");
       const param = {
         chainid: this.chainid,
         method: this.ethcallmethod,
-        args:args
+        args: args
       }
       this.httpclient.providerCall(param).then(res => {
         this.ethCallResult = JSON.stringify(res);
         console.log("methodResult:" + this.ethCallResult)
       })
-    }
+    },
+    async testDAC(){
+
+      const addresss=['0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4','0xA35f56ebF874Df1B6aC09E72528e1a86D4F1EF2B']
+      const data = ethers.utils.defaultAbiCoder.encode(
+          ["string", "string", "string", "bool", "string", "string"],
+          ["id12345", "name12345", "logo12345", true, "", ""],
+      );
+      // const data = '0x00000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000000000870306a3669387431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c6e616d6570306a36693874310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c6c6f676f70306a36693874310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001064657363206f662070306a3669387431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006746573742c350000000000000000000000000000000000000000000000000000';
+
+      const result = await this.httpclient.sendTxAsync(
+          'testdac',
+           588,
+          'createDAC',
+          [addresss, 2, data],
+          false
+      );
+     // this.contract.result =  daiContract2?.createDAC(addresss,1,data);
+    },
+    addToken() {
+      // this.httpclient.addTokenToMM({
+      //   token: "LXQ",
+      //   tokenAddress: "0x8E1De235c879ca7b6BDA3Df8c16E42f8eB1Da8d1",
+      //   tokenDecimals: 18,
+      //   tokenImage: "https://polis.metis.io/static/img/polis-trans.9c0be85f.png",
+      //   chainId:4
+      // }).then(res => {
+      //   console.log("add success ", res)
+      // })
+      // .catch(err => {
+      //   console.log("add failed", err)
+      // })
+
+      this.httpclient.addTokenToMM(
+        "LXQ",
+        "0x8E1De235c879ca7b6BDA3Df8c16E42f8eB1Da8d1",
+        18,
+         "https://polis.metis.io/static/img/polis-trans.9c0be85f.png",4
+      )
+        .then(res => {
+          console.log("add success ", res)
+        })
+        .catch(err => {
+          console.log("add failed", err)
+        })
+    },
   }
 }
 </script>
@@ -427,6 +470,7 @@ export default {
 .el-button {
   margin-top: 10px;
 }
+
 .about {
   background-color: beige;
 }

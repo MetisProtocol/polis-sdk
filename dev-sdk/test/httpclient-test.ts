@@ -1,16 +1,17 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
+import 'dotenv/config';
+import { getClient } from "./utils-test";
+import { HttpClient } from "../lib";
+let httpclient:HttpClient;
 
-import { HttpClient, IHttpClient } from '../lib/index';
-
-describe('Check if httpclient works', () => {
-    before(() => {
+describe('Check if httpclient works', async () => {
+    before(async () => {
+        httpclient = await getClient();
         let global;
         if (typeof window !== 'undefined') {
-            console.log('window is defined');
             global = window;
         }
-
         function mockStorage() {
             const storage = {};
             return {
@@ -35,25 +36,44 @@ describe('Check if httpclient works', () => {
                 },
             };
         }
-
         Object.defineProperty(window, 'localStorage', {
             value: mockStorage,
         });
-
         Object.defineProperty(window, 'sessionStorage', {
             value: mockStorage,
         });
         // global['localStorage'] = mockStorage();
         // global['sessionStorage'] = mockStorage();
     });
+    it('Httpclient should work', async () => {
 
-    it('Httpclient should work', () => {
-        const appId = '60d0700cb6a45c476e0d2080';
-        const accessToken = '85e083449e7b46b4be938035f858e626';
-        const refreshToken = '8e78546db5fc43eeaddda10ae29b0c1c';
-        const httpclient: IHttpClient = new HttpClient(appId, accessToken, refreshToken, 7200);
-        httpclient.sendTx('metis', 1337, 'add', [1, 2]);
-        // httpclient.confirmTx('metis', 1337, 'add', [1, 2]);
-        // httpclient.queryTx(1337, '0x3417ff3086882bc95e0efa246e21fee1d30bb5f18ed65925d5dc005dbb4e33cd');
+        httpclient.sendTx('metis', 1337, 'add', [1, 2],  (res:any) => {
+            console.log(res);
+            expect(res.code, 200);
+        },  (err:any) => {
+            console.log('err:', err);
+        },  null, true);
+    });
+
+    it('domain test', async () => {
+        const name:string = 'test-add';
+        const domain = {
+            name,
+            chains: [
+                {
+                    chainid: '1',
+                    contract_address:'0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4',
+                },
+                {
+                    chainid: '2',
+                    contract_address:'0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4',
+                },
+            ],
+            abi: '{"a":"1"}',
+        };
+        let res = await httpclient.createDomain(domain);
+        expect(res.code).to.equal(200);
+        res = await httpclient.delDomain(name);
+        expect(res.code).to.equal(200);
     });
 });

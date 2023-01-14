@@ -7,11 +7,15 @@
 import { IHttpClient, IOauth2User } from './interfaces';
 import { Oauth2Client } from './oauth2-client';
 import endpoints from './endpoints';
-import metamask, { getMetaAccounts } from './metamask';
+import metamask, { addToken, getMetaAccounts } from './metamask';
 import request from './request';
 
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import dialog from "./provider/utils/dialog";
+import log from "./provider/utils/log"
+import { BridgeDomainTransactionInfo, DomainTransactionInfo } from "./provider/types";
+import { TX_TYPE, sleep, WALLET_TYPES } from "./provider/utils";
 
 export class HttpClient implements IHttpClient {
     appId: string;
@@ -20,24 +24,28 @@ export class HttpClient implements IHttpClient {
     endpoints: endpoints = new endpoints();
     apiHost = this.endpoints.getApiHost();
     confirmUrl = this.endpoints.getConfirmUrl();
+    bridgeUrl = this.endpoints.getBridgeUrl();
     oAuth2Client: Oauth2Client;
     swalPromise: any = null;
     env = '';
     txStatus = '';
     loadingDialog = Swal.mixin({});
+    bridgeMetaMask:boolean = true;
 
-    constructor(appId: string, accessToken: string, refreshToken: string, expiresIn: number, apiHost?: string, env: string = '') {
-        this.endpoints = new endpoints(env);
+    constructor(appId: string, accessToken: string, refreshToken: string, expiresIn: number, apiHost?: string,bridgeMetaMask:boolean=true) {
+        this.bridgeMetaMask=bridgeMetaMask;
+        this.endpoints = new endpoints(apiHost);
         if (apiHost) {
             this.apiHost = apiHost;
         } else {
             this.apiHost = this.endpoints.getApiHost();
         }
         this.confirmUrl = this.endpoints.getConfirmUrl();
+        this.bridgeUrl = this.endpoints.getBridgeUrl();
         this.appId = appId;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.oAuth2Client = new Oauth2Client(env);
+        this.oAuth2Client = new Oauth2Client(apiHost);
 
         const oauthUser: IOauth2User = {
             appId,
@@ -49,12 +57,8 @@ export class HttpClient implements IHttpClient {
         this.oAuth2Client.setUser(oauthUser);
     }
 
-    log(...obj: any[]): void {
-        console.log(obj);
-    }
-
     handleRefreshToken(callback?: Function): void {
-        this.log(new Date().getTime(), this.oAuth2Client.oauth2User?.expriesAt!);
+        // log.debug(new Date().getTime(), this.oAuth2Client.oauth2User?.expriesAt!);
 
         if (new Date().getTime() < this.oAuth2Client.oauth2User?.expriesAt!) {
             if (callback) {
@@ -72,12 +76,12 @@ export class HttpClient implements IHttpClient {
         });
     }
 
-    async getBalance(chainid: number, address: string = ''): Promise<any> {
+    async getBalance(chainId: number, address: string = ''): Promise<any> {
         const headers = {
             'Content-Type': 'application/json',
             'Access-Token': this.accessToken,
         };
-        let data: any = {chainid};
+        let data: any = {chainId};
         if (address && address.length > 0) {
             data.address = address;
         }
@@ -90,7 +94,7 @@ export class HttpClient implements IHttpClient {
        toBlock:0
        address:"",
        blockHash:"",
-       chainid:0
+       chainId:0
       }
      */
     async getLogsAsync(data: any): Promise<any> {
@@ -101,29 +105,36 @@ export class HttpClient implements IHttpClient {
         return this.post('get_tx_logs', data);
     }
 
-    async post(method: string, data: any): Promise<any> {
+    async post(method: string, data: any, disableTooltip: boolean= false, httpMethod: string = 'post', returnObj:boolean = false): Promise<any> {
         await this.handleRefreshTokenAsync();
         const headers = {
             'Content-Type': 'application/json',
             'Access-Token': this.accessToken,
         };
-        const res = await axios.post(this.apiHost + `/api/v1/oauth2/` + method, data, {headers});
-
+        let res;
+        if (httpMethod === 'post') {
+             res = await axios.post(this.apiHost + `/api/v1/oauth2/` + method, data, { headers });
+        }else {
+            res = await axios.get(this.apiHost + `/api/v1/oauth2/` + method, { headers });
+        }
         if (res.status === 200 && res.data && res.data.code === 200) {
             // return res.data.data
             const trans = res.data.data;
+            if (returnObj) {
+                return Promise.resolve(res.data);
+            }
             return Promise.resolve(trans);
         }
         if (res.status === 200 && res.data) {
             const errMsg = res.data.msg;
-            error(errMsg);
+            if (!disableTooltip) {
+                error(errMsg);
+            }
         }
         return Promise.reject(res.data);
     }
 
     async handleRefreshTokenAsync(): Promise<any> {
-        // this.log(new Date().getTime(), this.oAuth2Client.oauth2User?.expriesAt!);
-
         if (new Date().getTime() < this.oAuth2Client.oauth2User?.expriesAt!) {
             return null;
         }
@@ -135,14 +146,14 @@ export class HttpClient implements IHttpClient {
         return ret;
     }
 
-    sendTx(domain: string, chainid: number, fun: string, args?: any[], succCallback?: Function, errCallback?: Function, extendParams:any = null): any {
+    sendTx(domain: string, chainId: number, fun: string, args?: any[], succCallback?: Function, errCallback?: Function, extendParams?:any , disableTooltip:boolean = false): any {
         const headers = {
             'Content-Type': 'application/json',
             'Access-Token': this.accessToken,
         };
         this.handleRefreshToken(() => {
             axios.post(this.apiHost + `/api/v1/oauth2/send_tx`, {
-                chainid,
+                chainId,
                 domain,
                 args,
                 function: fun,
@@ -158,7 +169,7 @@ export class HttpClient implements IHttpClient {
                         if (trans.act && trans.act === 'SIGN') {
                             // neet to auth from METIS or METAMASK
                             if (trans.wallet && trans.wallet === 'METAMASK') {
-                                this.getChainUrl(trans.chainid).then(chainObj => {
+                                this.getChainUrl(trans.chainId).then(chainObj => {
                                     metamask.sendMetaMaskContractTx(trans, chainObj).then(res => {
                                         let savedTx: any;
                                         if (res?.success) {
@@ -169,7 +180,7 @@ export class HttpClient implements IHttpClient {
                                                         savedTx = {
                                                             tx: res?.data.trans.txhash,
                                                             status: 'SERVER_ERROR',
-                                                            chainid: trans.chainid,
+                                                            chainId: trans.chainId,
                                                             domain: trans.domain,
                                                             data: 'ok',
                                                             act: 'CREATE',
@@ -181,7 +192,7 @@ export class HttpClient implements IHttpClient {
                                 });
                             } else {
                                 // METIS
-                                this.beforeConfirm(trans.domain, trans.chainid, trans.eth_address, trans.contract_address, trans.function, trans.args, trans.gas, trans.gas_price, trans.fee, trans.wallet, trans.func_abi_sign, trans.value);
+                                this.beforeConfirm(trans);
                             }
                         }
 
@@ -206,17 +217,25 @@ export class HttpClient implements IHttpClient {
                         }
                     } else if (res.status === 200 && res.data) {
                         const errMsg = res.data.msg;
-                        error(errMsg);
+                        if (!disableTooltip) {
+                            error(errMsg);
+                        }
                         if (errCallback) {
                             errCallback(errMsg);
                         }
                         // alert(errMsg);
                     }
+                })
+                // tslint:disable-next-line:ter-arrow-parens
+                .catch(err => {
+                    if (errCallback) {
+                        errCallback(err);
+                    }
                 });
         });
     }
 
-    async estimateGasAsync(domain: string, chainid: number, fun: string, args?: any[], disableTooltip:boolean = false, extendParams: any = null): Promise<any> {
+    async estimateGasAsync(domain: string, chainId: number, fun: string, args?: any[], disableTooltip:boolean = false, extendParams: any = null): Promise<any> {
         const r = new request(!disableTooltip);
         try {
             await this.handleRefreshTokenAsync();
@@ -225,7 +244,7 @@ export class HttpClient implements IHttpClient {
                 'Access-Token': this.accessToken,
             };
             const res = await r.instance.post(`${this.apiHost}/api/v1/oauth2/send_tx`, {
-                chainid,
+                chainId,
                 domain,
                 args,
                 estimateGas: true,
@@ -250,7 +269,7 @@ export class HttpClient implements IHttpClient {
     }
 
     // @ts-ignore
-    async sendTxAsync(domain: string, chainid: number, fun: string, args?: any[], disableTooltip:boolean = false, extendParams: any = null): Promise<any> {
+    async sendTxAsync(domain: string, chainId: number, func: string, args?: any[], disableTooltip:boolean = false, extendParams: any = null): Promise<any> {
         if (!disableTooltip) {
             this.showLoading();
         }
@@ -263,10 +282,10 @@ export class HttpClient implements IHttpClient {
                 'Access-Token': this.accessToken,
             };
             const res = await r.instance.post(`${this.apiHost}/api/v1/oauth2/send_tx`, {
-                chainid,
+                chainId,
                 domain,
                 args,
-                function: fun,
+                function: func,
                 extendParams: extendParams,
             }, {headers})
                 .then(function (res: any) {
@@ -279,21 +298,30 @@ export class HttpClient implements IHttpClient {
                 const trans = res.data.data;
                 if (trans.act && trans.act === 'SIGN') {
                     // neet to auth from METIS or METAMASK
-                    if (trans.wallet === 'METAMASK') {
+                    let res: any;
+                    //region bridge to polis trans
+                    if (this.bridgeMetaMask &&( trans.wallet == WALLET_TYPES.MM || trans.wallet == WALLET_TYPES.WC) ) {
+                        const postData = Object.assign(trans, {txType: TX_TYPE.SEND_CON_TX})
+                        res = await this.polisBridgePage(postData);
+                        return Promise.resolve(res.data);
+                    }
+                    //endregion
+                    
+                    if (trans.wallet ===  WALLET_TYPES.MM) {
                         this.txStatus = '';
-                        const chainObj = await this.getChainUrl(trans.chainid);
-
-                        const res = await metamask.sendMetaMaskContractTx(trans, chainObj);
-                        console.log('metamak', res);
+                        const chainObj = await this.getChainUrl(trans.chainId);
+                        res = await metamask.sendMetaMaskContractTx(trans, chainObj, disableTooltip);
+                        log.debug('metamak', res);
                         let savedTx: any;
                         if (res?.success) {
+                            //region save tx to polis
                             savedTx = await saveTx(this.apiHost, this.accessToken, 'save_app_tx', res?.data, true);
                             if (savedTx == null) {
                                 // server save tx error ,also return but status = IN_PROGRESSING because tx had success
                                 savedTx = {
                                     tx: res?.data.trans.txhash,
                                     status: 'SERVER_ERROR',
-                                    chainid: trans.chainid,
+                                    chainId: trans.chainId,
                                     domain: trans.domain,
                                     data: 'ok',
                                     act: 'CREATE',
@@ -303,11 +331,12 @@ export class HttpClient implements IHttpClient {
                                     reject(savedTx);
                                 });
                             }
+                            //endregion save to to polis
+                            
+                            //region query tx status
                             while (this.txStatus !== 'SUCCEED' && this.txStatus !== 'FAILED') {
-                                await new Promise(resolve => {
-                                    setTimeout(resolve, 2000);
-                                });
-                                savedTx = await this.queryTxAsync(chainid, res?.data.trans.txhash, true);
+                                await sleep(2000)
+                                savedTx = await this.queryTxAsync(chainId, res?.data.trans.txhash, true);
                                 if (savedTx && savedTx.status && (savedTx.status === 'SUCCEED' || savedTx.status === 'FAILED')) {
                                     this.txStatus = savedTx.status;
                                     if (savedTx.status === 'FAILED') {
@@ -324,8 +353,8 @@ export class HttpClient implements IHttpClient {
                             return new Promise<any>((resolve, reject) => {
                                 resolve(savedTx);
                             });
-                        }
-                        else {
+                            //endregion query tx
+                        } else {
                             error(res?.data);
                             return Promise.reject(res);
                         }
@@ -334,8 +363,12 @@ export class HttpClient implements IHttpClient {
                         }
                         return new Promise<any>((resolve, reject) => reject(res));
                     }
-                    // METIS
-                    return this.beforeConfirm(trans.domain, trans.chainid, trans.eth_address, trans.contract_address, trans.function, trans.args, trans.gas, trans.gas_price, trans.fee, trans.wallet, trans.func_abi_sign, trans.value);
+                    else if (trans.wallet == WALLET_TYPES.WC) {
+        
+                    } else {
+                        // METIS
+                        return this.beforeConfirm(trans);
+                    }
                 }
                 if (trans.act && trans.act === 'SUCCESS' && !disableTooltip) {
                     const toast = Swal.mixin({
@@ -359,7 +392,9 @@ export class HttpClient implements IHttpClient {
             }
             if (res.status === 200 && res.data) {
                 const errMsg = res.data.msg;
-                error(errMsg);
+                if(!disableTooltip){
+                    error(errMsg);
+                }
                 return Promise.reject({status: 'ERROR', message: errMsg});
             } else {
                 return Promise.reject({status: 'ERROR', message: 'server error:'});
@@ -370,34 +405,135 @@ export class HttpClient implements IHttpClient {
         return null;
     }
 
-    async beforeConfirm(domain: string, chainid: number, from: string, address: string, fun: string, args?: any[], gas?: string, gasPrice?: string, fee?: string, wallet?: string, funcAbiSign?: string, value?: string): Promise<any> {
-        // open a dialog
-        const transObj = {
-            domain,
-            chainid,
-            from,
-            address,
-            fun,
-            args,
-            gas,
-            gasPrice,
-            fee,
-            wallet,
-            funcAbiSign,
-            accessToken: this.accessToken,
-            // tslint:disable-next-line:object-shorthand-properties-first
-            value,
+    private async polisBridgePage(data:any): Promise<any> {
+        const bridgeUrl = this.bridgeUrl;
+        const postData:BridgeDomainTransactionInfo = {
+            walletType: data.wallet,
+            domain: data.domain,
+            chainId: data.chainId,
+            from: data.eth_address,
+            function: data.function,
+            funcAbi: data.func_abi_sign,
+            args: data.args ? data.args : [],
+            gas: data.gas,
+            gasLimit: data.gasLimit,
+            gasPrice: data.gas_price_num,
+            fee: data.fee_num,
+            feeTxt: data.fee,
+            contractAddress:data.contract_address,
+            accessToken:this.accessToken,
+            value: data.value,
+            symbol: data.symbol,
+            to: data.to,
+            data: data.data?data.data:'0x',
+            act: data.act,
+            isMetamask: false,
+            isThirdwallet:false,
+            nonce: data.nonce,
+            chainUrl:'',
+            txType: TX_TYPE.SEND_CON_TX,
+            sdkVer:1
         };
+        log.debug("sdk v1 postdata:",postData);
+        const confirmWin =dialog.fire({
+            title: '',
+            html: `<iframe src="${bridgeUrl}" style="width: 100%; height: 0px;" frameborder="0" id="polisBridgeIframe"></iframe>`,
+            width: `0px`,
+            showConfirmButton: false,
+            background: '#00004D',
+            didOpen: (dom) => {
+                document.getElementById('polisBridgeIframe')!.onload = function () {
+
+                    (document.getElementById('polisBridgeIframe') as HTMLIFrameElement).contentWindow!.postMessage(postData, bridgeUrl.split('/#')[0]);
+                };
+            },
+            didClose: () => {
+                window.postMessage({status: 'ERROR', code: 1000, message: 'CANCEL'}, window.location.origin);
+            },
+        });
+        const self = this;
+        return new Promise((resolve, reject) => {
+            function globalMessage(event: any) {
+                log.debug(`event confirm: ${JSON.stringify(event.data)}`);
+                if (event.origin !== 'https://polis.metis.io'
+                    && event.origin !== 'https://polis-test.metis.io'
+                    && event.origin !== 'https://test-polis.metis.io'
+                    && event.origin !== 'http://localhost:1024'　&& event.origin +"/" != self.apiHost && event.origin !== window.location.origin) {
+                    return;
+                }
+                if (event.data && event.data.status) {
+                    if (event.data.status === 'ERROR' || event.data.status === 'DECLINE' || event.data.status === 'FAILED') {
+                        reject(event.data);
+                    } else {
+                        resolve(event.data);
+                    }
+                    window.removeEventListener('message', globalMessage, false);
+                    dialog.close(self.swalPromise);
+                }
+            }
+
+            window.addEventListener('message', globalMessage, false);
+        });
+    }
+
+    async beforeConfirm(data:any): Promise<any> {
+        // open a dialog
+        //region del
+        // const transObj = {
+        //     domain,
+        //     chainId,
+        //     from,
+        //     address,
+        //     func,
+        //     args,
+        //     gas,
+        //     gasPrice,
+        //     fee,
+        //     wallet,
+        //     funcAbiSign,
+        //     accessToken: this.accessToken,
+        //     value,
+        // };
+        //endregion
+        const postData:BridgeDomainTransactionInfo = {
+            walletType: data.wallet,
+            domain: data.domain,
+            chainId: data.chainId,
+            from: data.eth_address,
+            function: data.function,
+            funcAbi: data.func_abi_sign,
+            args: data.args ? data.args : [],
+            gas: data.gas,
+            gasLimit: data.gasLimit,
+            gasPrice: data.gas_price_num,
+            fee: data.fee_num,
+            feeTxt: data.fee,
+            contractAddress:data.contract_address,
+            accessToken:this.accessToken,
+            value: data.value,
+            symbol: data.symbol,
+            to: data.to?data.to:data.contract_address,
+            data: data.data,
+            act: data.act,
+            isMetamask: false,
+            isThirdwallet:false,
+            nonce: data.nonce,
+            chainUrl:'',
+            txType: TX_TYPE.SEND_CON_TX,
+            sdkVer:1
+        };
+        log.debug("sdk v1 postdata:",postData);
+    
         const confirmUrl = this.confirmUrl;
         Swal.fire({
-            title: '<span style="font-size: 24px;font-weight: bold;color: #FFFFFF;font-family: Helvetica-Bold, Helvetica">Confirming your Submission</span>',
+            title: '<span style="font-size: 24px;font-weight: bold;color: #FFFFFF;font-family: Helvetica-Bold, Helvetica">Request Confirmation</span>',
             html: `<iframe src="${this.confirmUrl}" style="width: 100%; height: 480px;" frameborder="0" id="metisConfirmIframe"></iframe>`,
             width: '720px',
             showConfirmButton: false,
             background: '#00004D',
             didOpen: (dom) => {
                 document.getElementById('metisConfirmIframe')!.onload = function () {
-                    (document.getElementById('metisConfirmIframe') as HTMLIFrameElement).contentWindow!.postMessage(transObj, confirmUrl.split('/#')[0]);
+                    (document.getElementById('metisConfirmIframe') as HTMLIFrameElement).contentWindow!.postMessage(postData, confirmUrl.split('/#')[0]);
                 };
             },
             didClose: () => {
@@ -409,12 +545,16 @@ export class HttpClient implements IHttpClient {
             const self = this;
 
             function globalMessage(event: any) {
-                // console.log(`event confirm: ${JSON.stringify(event.data)}`);
-                if (event.origin !== 'https://polis.metis.io' && event.origin !== 'http://localhost:1024' && event.origin !== window.location.origin) {
+                if (event.origin !== 'https://polis.metis.io'
+                    && event.origin !== 'https://polis-test.metis.io'
+                    && event.origin !== 'https://test-polis.metis.io'
+                    && event.origin !== 'http://localhost:1024'
+                    && event.origin  !== self.apiHost
+                    && event.origin !== window.location.origin) {
                     return;
                 }
                 if (event.data && event.data.status) {
-                    if (event.data.status === 'ERROR' || event.data.status === 'DECLINE' || event.data.status === 'FAIED') {
+                    if (event.data.status === 'ERROR' || event.data.status === 'DECLINE' || event.data.status === 'FAILED') {
                         reject(event.data);
                     } else {
                         resolve(event.data);
@@ -428,14 +568,14 @@ export class HttpClient implements IHttpClient {
         });
     }
 
-    queryTx(chainid: number, tx: string, succCallback?: Function, errCallback?: Function,extendParams: any = null): void {
+    queryTx(chainId: number, tx: string, succCallback?: Function, errCallback?: Function,extendParams: any = null, disableTooltip: boolean= false): void {
         const headers = {
             'Content-Type': 'application/json',
             'Access-Token': this.accessToken,
         };
         this.handleRefreshToken(() => {
             axios.post(this.apiHost + `/api/v1/oauth2/query_tx`, {
-                chainid,
+                chainId,
                 tx,
                 extendParams: extendParams
             }, {headers}).then(res => {
@@ -461,16 +601,12 @@ export class HttpClient implements IHttpClient {
                         // this.disconnect();
                         if (trans.status && trans.status == 'SUCCEED') {
                             // success result
-                            this.log('1');
-
                             Toast.fire({
                                 icon: 'success',
                                 title: 'Smart contract submit successfully',
                             });
-                        } else if (trans.status && trans.status == 'FAIED') {
+                        } else if (trans.status && trans.status == 'FAILED') {
                             // failed result
-                            this.log('0');
-
                             Toast.fire({
                                 icon: 'warning',
                                 title: 'Smart contract submit failed',
@@ -479,7 +615,9 @@ export class HttpClient implements IHttpClient {
                     }
                 } else if (res.status === 200 && res.data) {
                     const errMsg = res.data.msg;
-                    error(errMsg);
+                    if(!disableTooltip){
+                        error(errMsg);
+                    }
                     if (errCallback) {
                         errCallback(errMsg);
                     }
@@ -489,7 +627,7 @@ export class HttpClient implements IHttpClient {
         });
     }
 
-    async queryTxAsync(chainid: number, tx: string, disableTooltip?: boolean): Promise<any> {
+    async queryTxAsync(chainId: number, tx: string, disableTooltip?: boolean): Promise<any> {
         const headers = {
             'Content-Type': 'application/json',
             'Access-Token': this.accessToken,
@@ -497,7 +635,7 @@ export class HttpClient implements IHttpClient {
         await this.handleRefreshToken();
         const r = new request(!disableTooltip);
         const res = await r.instance.post(this.apiHost + `/api/v1/oauth2/query_tx`, {
-            chainid,
+            chainId,
             tx,
         }, {headers});
         if (res.status === 200 && res.data && res.data.code === 200) {
@@ -523,7 +661,7 @@ export class HttpClient implements IHttpClient {
                         icon: 'success',
                         title: 'Smart contract submit successfully',
                     });
-                } else if (trans.status && trans.status === 'FAIED') {
+                } else if (trans.status && trans.status === 'FAILED') {
                     // failed result
                     toast.fire({
                         icon: 'warning',
@@ -535,7 +673,9 @@ export class HttpClient implements IHttpClient {
         }
         if (res.status === 200 && res.data) {
             const errMsg = res.data.msg;
-            error(errMsg);
+            if(!disableTooltip){
+                error(errMsg);
+            }
         }
         return null;
 
@@ -545,12 +685,87 @@ export class HttpClient implements IHttpClient {
         Swal.close(this.swalPromise);
     }
 
-    async getChainUrl(chainid: string): Promise<any> {
-        return await this.post('chainurl', {chainid});
+    async getChainUrl(chainId: string): Promise<any> {
+        return await this.post('chainurl', {chainId});
     }
 
-    async getDomain(name: string, chainid: string): Promise<any> {
-        return await this.post('domains', {name, chainid});
+    async addTokenToMM(token:any, tokenAddress:string = '', tokenDecimals:number = 18, tokenImage:string = '' , chainId:number = 0):Promise<any> {
+        let chainObj = null;
+        let chainNum = chainId;
+        if (typeof token === 'object' && !!token['chainId']) {
+            chainNum = token['chainId'];
+        }
+        if (chainNum > 0) {
+            try {
+                chainObj = await this.getChainUrl(`${chainNum}`);
+                chainObj['chainId'] = chainNum;
+            }catch (e) {
+                chainObj = null;
+            }
+
+        }
+        return  addToken(token, tokenAddress, tokenDecimals, tokenImage, chainObj);
+    }
+
+    async getDomain(name: string, chainId: string): Promise<any> {
+        return  this.post('domains', { name, chainId });
+    }
+
+    /**
+     *
+     * @param param
+     * {
+     *   name: "",  // domain name
+     *   chains: [
+     *     {
+     *        chainId: "1",
+     *        contract_address:""
+     *     },{
+     *        chainId: "2",
+     *        contract_address:""
+     *     }
+     *   ],
+     *   abi: "ABI json string"
+     * }
+     */
+    async createDomain(param:any, disableTooltip:boolean= true): Promise<any> {
+        return  this.post('domains/create', param, disableTooltip, 'post', true);
+    }
+
+    /**
+     *
+     * @param param
+     * {
+     *   id: "",  // domain id
+     *   domain:"",
+     *   chains: [
+     *     {
+     *        chainid: "1",
+     *        contract_address:""
+     *     },{
+     *        chainid: "2",
+     *        contract_address:""
+     *     }
+     *   ]
+     * }
+     */
+     async saveDomainChains(param:any, disableTooltip:boolean= true): Promise<any> {
+         if (param.id) {
+             return  this.post(`domains/${param.id}/save_chains`, param, disableTooltip, 'post', true);
+         }
+         if (param.domain) {
+             return  this.post(`domains/${param.domain}/save_chains`, param, disableTooltip, 'post', true);
+         }
+         return Promise.reject('The parameter ID or domain can not be empty');
+    }
+
+
+    /**
+     *
+     * @param doamin name
+     */
+    async delDomain(domain:string, disableTooltip:boolean= true):Promise<any> {
+        return this.post(`domains/deldomain/${domain}`, null, disableTooltip, 'get', true);
     }
 
     /**
@@ -559,11 +774,89 @@ export class HttpClient implements IHttpClient {
      * {
      *     method: "",
      *     args: {}
-     *     chainid: 4,
+     *     chainId: 4,
      * }
      */
     async providerCall(param:any): Promise<any> {
         return await this.post('eth_call', param);
+    }
+
+    /**
+    *
+    * @param param
+    * {
+    * 	"name": "Dapp name* ", 
+    * 	"logo":"dapp logo url*", 
+    * 	"support_email": "support email* ", 
+    * 	"dev_email": "developer email*",
+    * 	"dev_name": "developer name*", 
+    * 	"home_page_link": "Home page link https://xxxxx", 
+    * 	"privacy_policy_link": "Privacy policy link https://xxxxx", 
+    * 	"tos_link": "Terms of service link https://xxxxx", 
+    * 	"dapp_permission": "1",  // 0 - Read Only, 1-Full Permission
+    * 	"domains":["domain1", "domain2"]
+    * }
+    */
+    async createDapp(param:any, disableTooltip:boolean= true): Promise<any> {
+        return  this.post('create_applications?access_token='+this.accessToken, param, disableTooltip, 'post', true);
+    }
+
+    /**
+    *
+    * @param param
+    * {
+    *   "id":"612265585c721cbd817374a6", // dapp id
+    * 	"name": "Dapp name* ", 
+    * 	"logo":"dapp logo url*", 
+    * 	"support_email": "support email* ", 
+    * 	"dev_email": "developer email*",
+    * 	"dev_name": "developer name*", 
+    * 	"home_page_link": "Home page link https://xxxxx", 
+    * 	"privacy_policy_link": "Privacy policy link https://xxxxx", 
+    * 	"tos_link": "Terms of service link https://xxxxx", 
+    * 	"dapp_permission": "1",  // 0 - Read Only, 1-Full Permission
+    * 	"domains":["domain1", "domain2"]
+    * }
+    */
+    async modifyDapp(param:any, disableTooltip:boolean= true): Promise<any> {
+        return  this.post('modify_applications?access_token='+this.accessToken, param, disableTooltip, 'post', true);
+    }
+
+    /**
+    *
+    * @param param
+    * {
+    *   "ids":[ "612266a85c721ccf35246781","62c2de57f212516098bf814b"] //List of DAPP ids to delete
+    * }
+    */
+    async deleteDapps(param:any, disableTooltip:boolean= true): Promise<any> {
+        return  this.post('del_applications?access_token='+this.accessToken, param, disableTooltip, 'post', true);
+    }
+
+    /**
+     * 
+     * @param pageSize
+     * @param pageIndex 
+     * @returns 
+     */
+    async getDappList(pageSize: number, pageIndex: number): Promise<any> {
+        let method = 'get_applications?'+this.accessToken+"&page_no="+pageIndex+"&page_size="+pageSize;
+        return  this.post(method,null,false,'get');
+    }
+
+    /**
+     * 
+     * @param dappId
+     * @returns 
+     */
+    async getDapp(dappId: string): Promise<any> {
+        let method = 'get_application?'+this.accessToken+"&id="+dappId;
+        return  this.post(method,null,false,'get');
+    }
+
+    async applyToDeveloper(): Promise<any> {
+        let method = 'dev_request?'+this.accessToken;
+        return  this.post(method,null,false,'get');
     }
 
     showLoading() {
@@ -582,7 +875,7 @@ export class HttpClient implements IHttpClient {
 }
 
 function error(msg: any): void {
-    console.log(`msg:${msg}`);
+    log.debug(`msg`,msg);
     let errMsg = msg;
     if (typeof (msg) === 'object' && msg.message) {
         errMsg = msg.message;
@@ -613,14 +906,24 @@ async function saveTx(apiHost: string, accessToken: string, method: string, data
         'Access-Token': accessToken,
     };
     try {
-        const res = await new request(!disableDialog).instance.post(`${apiHost}/api/v1/oauth2/` + method, data, {headers});
+        const res = await new request(!disableDialog).instance.post(`${apiHost}/api/v1/oauth2/` + method, data, { headers });
         if (res.status === 200 && res.data && res.data.code === 200) {
             // return res.data.data
             const trans = res.data.data;
             return trans;
         }
         if (res.status === 200 && res.data) {
-            error(res.data.msg);
+            const result = await Swal.fire({
+                html: '<div style=\'text-align: left;\'>The transaction was submitted successfully, but the application is having trouble with tracking the transaction status.</div>',
+                showCancelButton: true,
+                width: 600,
+                confirmButtonText: 'Check again',
+            });
+            if (result.isConfirmed) {
+                return await saveTx(apiHost, accessToken, method, data, disableDialog);
+            } else {
+                 error(res.data.msg);
+            }
         }
     } catch (e) {
         const result = await Swal.fire({

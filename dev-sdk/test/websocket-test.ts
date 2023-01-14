@@ -4,15 +4,15 @@ import { describe, it } from 'mocha';
 import { WebSocketClient, IWebsocketClient } from '../lib/index';
 
 describe('Check if websocket works', () => {
-    before(()=>{
+    before(() =>{
 
-    })
+    });
 
     it('Instance should be connected', () => {
         const appId = '60d0700cb6a45c476e0d2080';
         const accessToken = '85e083449e7b46b4be938035f858e626';
         const refreshToken = '8e78546db5fc43eeaddda10ae29b0c1c';
-        let websocket: IWebsocketClient = new WebSocketClient(appId, accessToken, refreshToken);
+        let websocket: IWebsocketClient = new WebSocketClient(appId, accessToken, refreshToken,1000);
         let isInit = websocket.connect((...args:any[])=>{
             // console.log('emit', args, args.length);
             let trans = args[0];

@@ -5,27 +5,32 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "serve:dev": "vue-cli-service serve --mode dev",
-    "serve:polis": "vue-cli-service serve --mode polis",
+    "serve:test": "vue-cli-service serve --mode test",
+    "serve:qa": "vue-cli-service serve --mode qa",
+    "serve:prod": "vue-cli-service serve --mode prod",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@apollo/client": "^3.6.9",
+    "@metis.io/middleware-client": "^1.1.21",
+    "@walletconnect/client": "^1.7.8",
+    "@walletconnect/qrcode-modal": "^1.8.0",
+    "@walletconnect/web3-provider": "^1.8.0",
     "axios": "^0.21.1",
+    "bignumber.js": "^9.0.2",
     "core-js": "^3.6.5",
     "element-ui": "^2.15.5",
-    "ethers": "^5.4.5",
+    "ethers": "^5.6.1",
+    "graphql-tag": "^2.12.6",
     "sweetalert2": "^11.1.4",
     "vue": "^2.6.11",
     "vue-router": "^3.2.0"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",
-    "@vue/cli-plugin-eslint": "~4.5.0",
     "@vue/cli-plugin-router": "~4.5.0",
     "@vue/cli-service": "~4.5.0",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^6.7.2",
-    "eslint-plugin-vue": "^6.2.2",
     "vue-template-compiler": "^2.6.11"
   }
 }

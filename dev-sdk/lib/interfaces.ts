@@ -59,17 +59,16 @@ export interface IOauth2Client {
 
 export interface IHttpClient {
 
-    sendTx: (domain: string, chainid: number, func: string, args?:any[], succCallback?: Function, errCallback?: Function) => any;
+    sendTx: (domain: string, chainid: number, func: string, args?:any[], succCallback?: Function, errCallback?: Function, extendParams?:any, disableTooltip?: boolean) => any;
 
     // confirmTx: (domain: string, chainid: number, func: string, args?:any[]) => any;
 
     queryTx: (chainid: number, tx: string, succCallback?: Function, errCallback?: Function) => any;
-
-
-    sendTxAsync: (domain: string, chainid: number, func: string, args?:any[], disableTooltip?: boolean) => Promise<any>;
-
+    sendTxAsync: (domain: string, chainid: number, func: string, args?:any[], disableTooltip?: boolean, extendParams?: any) => Promise<any>;
     queryTxAsync: (chainid: number, tx: string, disableTooltip?: boolean) => Promise<any>;
-
+    saveDomainChains: (param:any, disableTooltip?:boolean) => Promise<any>;
+    createDomain:(param:any, disableTooltip?:boolean) => Promise<any>;
+    delDomain:(domain:string, disableTooltip?:boolean) => Promise<any>;
     closeConfirmDialog: () => void;
 }
 

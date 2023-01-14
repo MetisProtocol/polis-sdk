@@ -12,17 +12,16 @@ import endpoints from './endpoints';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import errData from "./error";
+import log from './provider/utils/log'
 
 export class Oauth2Client implements IOauth2Client {
     endpoints = new endpoints();
     oauthRedirectUrl: string = this.endpoints.getOauthRedirectUrl();
     apiHost: string = this.endpoints.getApiHost();
     oauth2User?: IOauth2User;
-    env = '';
 
-    constructor(env:string = '') {
-        this.endpoints = new endpoints(env);
-        this.env = env;
+    constructor(apiHost:string = '') {
+        this.endpoints = new endpoints(apiHost);
         this.oauthRedirectUrl = this.endpoints.getOauthRedirectUrl();
         this.apiHost = this.endpoints.getApiHost();
     }
@@ -42,7 +41,7 @@ export class Oauth2Client implements IOauth2Client {
         window.location.replace(`${this.oauthRedirectUrl}switch_account=${switchAccount}&app_id=${appId}&return_url=${encodeURIComponent(returnUrl)}`);
         return null;
     }
-
+    
     logout(appId:string, accessToken:string, refreshToken:string): Promise<any> {
        //  const headers = {
        //      'Content-Type': 'application/json',
@@ -90,7 +89,7 @@ export class Oauth2Client implements IOauth2Client {
     }
 
     refreshToken(appId: string, refreshToken: string, callback?: Function): void {
-        axios.get(this.apiHost + `/api/v1/oauth2/refresh_token?app_id=${appId}&refresh_token=${refreshToken}`)
+        axios.get(this.apiHost + `api/v1/oauth2/refresh_token?app_id=${appId}&refresh_token=${refreshToken}`)
         .then(res => {
           if (res.status === 200 && res.data && res.data.code === 200) {
             this.oauth2User!.accessToken = res.data.data.access_token;
@@ -104,13 +103,12 @@ export class Oauth2Client implements IOauth2Client {
           }
           else if (res.status === 200 && res.data) {
             const errMsg = res.data.msg;
-            console.log(errMsg);
-            // alert(errMsg);
+            log.debug(errMsg);
         }});
     }
 
     async refreshTokenAsync(appId: string, refreshToken: string): Promise<any> {
-        const res = await axios.get(this.apiHost + `/api/v1/oauth2/refresh_token?app_id=${appId}&refresh_token=${refreshToken}`);
+        const res = await axios.get(this.apiHost + `api/v1/oauth2/refresh_token?app_id=${appId}&refresh_token=${refreshToken}`);
         
         if (res.status == 200 && res.data && res.data.code == 200) {
             this.oauth2User!.accessToken = res.data.data.access_token;
@@ -120,7 +118,7 @@ export class Oauth2Client implements IOauth2Client {
         }
         else if (res.status === 200 && res.data) {
             const errMsg = res.data.msg;
-            console.log(errMsg);
+            log.error(errMsg);
         }
         if (res.status === 200 && res.data && res.data.code === 200) {
             this.oauth2User!.accessToken = res.data.data.access_token;
@@ -135,14 +133,14 @@ export class Oauth2Client implements IOauth2Client {
     }
 
     async getUserInfoAsync(accessToken?: string): Promise<any> {
-        const res = await axios.get(this.apiHost + `/api/v1/oauth2/userinfo?access_token=${accessToken||this.oauth2User!.accessToken}`);
+        const res = await axios.get(this.apiHost + `api/v1/oauth2/userinfo?access_token=${accessToken||this.oauth2User!.accessToken}`);
         
         if (res.status === 200 && res.data && res.data.code === 200) {
             return res.data.data;
         }
         else if (res.status === 200 && res.data) {
             const errMsg = res.data.msg;
-            console.log(errMsg);
+            log.error(res.data);
         }
         return null;
     }

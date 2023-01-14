@@ -1,5 +1,20 @@
 # metis-client-demo
 
+## Build SDK
+
+In the SDK directory
+
+```
+npm build
+npm　link
+```
+
+## Link SDK
+
+```
+ npm link  @metis.io/middleware-client
+```
+
 ## Project setup
 ```
 npm install
@@ -7,7 +22,7 @@ npm install
 
 ### Compiles and hot-reloads for development
 ```
-npm run serve
+npm run serve:qa
 ```
 
 ### Compiles and minifies for production

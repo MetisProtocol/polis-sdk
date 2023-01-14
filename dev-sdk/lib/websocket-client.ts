@@ -104,7 +104,6 @@ export class WebSocketClient implements IWebsocketClient {
         // let newsocket = this.socket.connect();
 
         this.socket.on("connect", (...args: any[]) => {
-            // console.log('socket client connected');
             if (this.onConnect) {
                 this.onConnect(args);
             }
@@ -135,28 +134,24 @@ export class WebSocketClient implements IWebsocketClient {
         });
 
         this.socket?.on('disconnect', (reason: Socket.DisconnectReason) => {
-            // console.log('socket client disconnected', reason);
             if (this.onDisconnect) {
                 this.onDisconnect(reason);
             }
         });
 
         this.socket?.on('message', (...args: any[]) => {
-            // console.log('message received', args);
             if (this.onMessage) {
                 this.onMessage(args);
             }
         });
 
         this.socket?.on('json', (...args: any[]) => {
-            // console.log('json received', args);
             if (this.onJson) {
                 this.onJson(args);
             }
         });
 
         this.socket?.on('block_chain_' + this.accessToken, (...args: any[]) => {
-            // console.log('block chain emitted', args);
             if (args.length > 0) {
                 let trans = args[0];
 
@@ -185,7 +180,7 @@ export class WebSocketClient implements IWebsocketClient {
                             title: 'Smart contract submit successfully'
                         })
                     }
-                    else if (trans.status && trans.status == 'FAIED') {
+                    else if (trans.status && trans.status == 'FAILED') {
                         // failed result
                         this.log('0')
 
@@ -293,7 +288,6 @@ export class WebSocketClient implements IWebsocketClient {
             const self = this;
 
             function globalMessage(event: any) {
-                // console.log('eee', event)
                 if (event.origin !== "https://rocket.metis.io" && event.origin !== "https://polis.metis.io" && event.origin !== "http://localhost:1024")
                     return;
                 if (event.data && event.data.tx) {
@@ -322,24 +316,7 @@ export class WebSocketClient implements IWebsocketClient {
         //     }
         //   })
     }
-
-    /*
-    confirmTx(domain: string, chainid: number, fun: string, args?: any[]): void {
-        if (!this.socket || !this.socket?.connected) {
-            this.log('connection lost!');
-            return;
-        }
-
-        this.log('do confirm ' + fun);
-
-        this.socket.emit('tx_confirm', {
-            domain: domain,
-            chainid: chainid,
-            function: fun,
-            args: args
-        });
-    }
-    */
+    
     
     closeMonitor(tx: string): void {
         this.removeConfirmMap(tx);

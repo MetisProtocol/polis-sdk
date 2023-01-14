@@ -1,12 +1,105 @@
+
 # Polis dev sdk
 
 Polis dev sdk contains Oauth2Client, HttpClient
+
+## new 
+PolisClient,PolisProvider
 
 ## Sdk install
 ```
 npm install --save-dev @metis.io/middleware-client
 ```
 
+#Polis Provider
+
+```javascript
+
+const opts: IPolisProviderOpts = {
+            apiHost: 'http://polis-test.metis.io/',  // api host
+            token?: {accessToken}, //optional oauth2 access token 
+            chainId: 4,
+        }
+const polisprovider = new PolisProvider(opts)
+```
+#Polis Web3 Provider
+## ethers.js
+
+```javascript
+ethersProvider = new ethers.providers.Web3Provider(polisprovider)
+```
+
+
+
+#Polis Client
+
+```javascript
+
+const clientOps:IPolisClientOpts = {
+    chainId: CHAIN_ID,
+    appId:APP_ID,
+    apiHost :apiHost
+}
+client = new PolisClient(clientOps);
+client.web3Provider.getBalance("address")
+/**
+ * oauthInfo:  get from api: api/v1/oauth2/access_token or token string
+ * 
+ */
+client.connect(oauthInfo);
+// 1.1.17 later
+await client.connect(oauthInfo);
+```
+### Polis Client Events
+```javascript
+//event of debug
+ this.polisclient.on('debug', function (data) {
+        console.log('debug data:%s', JSON.stringify(data));
+ })
+// event of error
+this.polisclient.on('error', function (data) {
+    console.log('error:', data instanceof Error)
+});
+//when metamask wallet
+this.polisclient.on('chainChanged', (chainId) => {
+    console.log('polis-client print chainId =>', chainId);
+});
+this.polisclient.on('accountsChanged', (account) => {
+    console.log('polis-client print account =>', account);
+});
+```
+
+##  get Web3 Provider
+```javascript
+ethersProvider=client.web3Provider // ethers.providers.Web3Provider
+
+ethersProvider.getSinger().signMessage("aa")
+
+
+const daiAddress = this.contract.address;
+
+const daiAbi = [
+    // Some details about the token
+    "function name() view returns (string)",
+    "function symbol() view returns (string)",
+
+    // Get the account balance
+    "function balanceOf(address) view returns (uint)",
+
+    // Send some of your tokens to someone else
+    "function transfer(address to, uint amount)",
+
+    // An event triggered whenever anyone transfers to someone else
+    "event Transfer(address indexed from, address indexed to, uint amount)"
+];
+
+const daiContract = client.getContract(daiAddress, daiAbi);
+await daiContract.name();
+
+```
+
+
+-----
 ## Oauth2 client
 
 ### import & create
@@ -274,3 +367,100 @@ httpclient.providerCall(param).then(res => {
 })
 ```
 
+
+### addTokenToMM
+```
+ httpClient.addTokenToMM({
+        token: "XXX",
+        tokenAddress: "0x8E1De2XXXXXXXXXX1Da8d1",
+        tokenDecimals: 18,
+        tokenImage: "https://XXXXX.png",
+        chainId:4
+      }).then(res => {
+        console.log("add success ", res)
+      })
+      .catch(err => {
+        console.log("add failed", err)
+      })
+ OR
+ httpclient.addTokenToMM(
+        "XXX",
+        "0x8E1De235c879caXXBDA3DfXXXXXXf8eB1Da8d1",
+        18,
+         "https://XXXXX.png",4
+      )
+      .then(res => {
+        console.log("add success ", res)
+      })
+      .catch(err => {
+        console.log("add failed", err)
+      })
+```
+
+### domain manager
+```javascript
+/**
+ *
+ * @param param
+ * {
+ *   name: "",  // domain name
+ *   chains: [
+ *     {
+ *        chainid: "1", 
+ *        contract_address:""
+ *     },{
+ *        chainid: "2", 
+ *        contract_address:""
+ *     }
+ *   ],
+ *   abi: "ABI json string"
+ * }
+ */
+httpclient.createDomain(param).then(res => {
+    /**
+     *  {
+     *      code: 200
+     *      msg: "",
+     *      data: ""
+     *  }
+     */
+})
+/**
+* @param param
+* {
+    *   id: "",  // domain id
+    *   doman: "", // domain or id must be not empty
+    *   chains: [
+    *     {
+    *        chainid: "1",
+    *        contract_address:""
+    *     },{
+    *        chainid: "2",
+    *        contract_address:""
+    *     }
+ *   ],
+ *  override_chains: true , //options default false true: overide chains for domain chains , false: update chain or add chain
+ * }
+**/
+httpclient.saveDomainChains(param).then(res => {
+    /**
+     *  {
+     *      code: 200
+     *      msg: "",
+     *      data: ""
+     *  }
+     */
+})
+/**
+ * domain: domain name
+ */
+httpclient.delDomain(domain).then(res => {
+    /**
+     *  {
+     *      code: 200
+     *      msg: "",
+     *      data: ""
+     *  }
+     */
+})
+```

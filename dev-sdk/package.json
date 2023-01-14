@@ -1,6 +1,6 @@
 {
   "name": "@metis.io/middleware-client",
-  "version": "1.0.22",
+  "version": "1.1.29",
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -8,8 +8,12 @@
     "prepublish": "npm run build",
     "dev": "rm -fr ./dist && tsc -p tsconfig.dev.json",
     "build": "rm -fr ./dist && tsc -p tsconfig.prod.json",
+    "build:win": "tsc -p tsconfig.prod.json",
     "example": "npm run dev && node ./example/index.js",
-    "test": "cross-env NODE_ENV=dev ts-mocha -r jsdom-global/register -p ./tsconfig.test.json ./test/*"
+    "test": "cross-env NODE_ENV=test ts-mocha -r jsdom-global/register -p ./tsconfig.test.json ./test/*",
+    "test-client": "cross-env NODE_ENV=test ts-mocha -r jsdom-global/register -p ./tsconfig.test.json ./test/httpclient-test.ts",
+    "test-ws": "cross-env NODE_ENV=test ts-mocha -r jsdom-global/register -p ./tsconfig.test.json ./test/websocket-test.ts",
+    "test-pd": "cross-env NODE_ENV=test ts-mocha  -r jsdom-global/register -p ./tsconfig.test.json ./test/polisprovider-test.ts"
   },
   "repository": {
     "type": "git",
@@ -24,9 +28,13 @@
   "devDependencies": {
     "@types/chai": "^4.2.18",
     "@types/mocha": "^8.2.2",
+    "@types/node": "^17.0.21",
+    "@types/node-fetch": "^2.6.1",
     "chai": "^4.3.4",
+    "dotenv": "^10.0.0",
     "jsdom": "18.1.1",
     "jsdom-global": "3.0.2",
+    "jsencrypt": "^3.2.1",
     "mocha": "^8.4.0",
     "ts-mocha": "^8.0.0",
     "tslint": "^5.20.1",
@@ -35,10 +43,24 @@
   },
   "dependencies": {
     "@metamask/onboarding": "^1.0.1",
+    "@metamask/safe-event-emitter": "^2.0.0",
+    "@types/bn.js": "^5.1.0",
     "@types/socket.io-client": "^3.0.0",
+    "@walletconnect/client": "^1.8.0",
+    "@walletconnect/encoding": "^1.0.0",
+    "@walletconnect/qrcode-modal": "^1.8.0",
+    "@walletconnect/web3-provider": "^1.8.0",
     "axios": "^0.21.1",
-    "dotenv": "^10.0.0",
-    "ethers": "^5.4.5",
+    "bn.js": "^5.2.0",
+    "bn.js-typings": "^1.0.1",
+    "detect-browser": "^5.3.0",
+    "eth-rpc-errors": "^4.0.3",
+    "ethers": "^5.4.4",
+    "js-sha3": "^0.8.0",
+    "json-rpc-engine": "^6.1.0",
+    "keccak256": "^1.0.6",
+    "loglevel": "^1.8.0",
+    "query-string": "^7.1.1",
     "socket.io-client": "4.1.2",
     "sweetalert2": "^11.0.18"
   }
