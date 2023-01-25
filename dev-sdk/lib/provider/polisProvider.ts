@@ -207,7 +207,7 @@ export class PolisProvider extends JsonRpcEngine {
         return createAsyncMiddleware(async (req, res: any, next) => {
             if (req.method == 'eth_sendTransaction') {
                 await this.confirmTrans(req, res); //res
-                this.emit(PolisEvents.TX_CONFIRM_EVENT, Object.assign({}, {action: 'after confirmTrans'}, res));
+                    this.emit(PolisEvents.TX_CONFIRM_EVENT, Object.assign({}, {action: 'after confirmTrans'}, res));
             } else {
                 next()
             }
@@ -286,7 +286,7 @@ export class PolisProvider extends JsonRpcEngine {
         } catch (e) {
             this.emit(PolisEvents.TX_CONFIRM_DIALOG_EVENT, {walletType, action: 'close'});
             res.error = e;
-            this.emit('error', e)
+            this.emit(PolisEvents.ERROR_EVENT, e);
         }
     }
     
@@ -306,7 +306,7 @@ export class PolisProvider extends JsonRpcEngine {
                     break;
                 case WALLET_TYPES.WC:
                 case WALLET_TYPES.MM:
-                    confirmData = await this.polisBridgePage(estimateTx)
+                    confirmData = await this.polisBridgePage(estimateTx);
                     break;
                 default:
                     break;
@@ -317,7 +317,6 @@ export class PolisProvider extends JsonRpcEngine {
                 res.error = confirmData.data.message;
             }
             this.emit(PolisEvents.TX_CONFIRM_DIALOG_EVENT, {walletType, action: 'close'});
-            // log.debug("confirmData:", confirmData);
             if (this.walletType!=WALLET_TYPES.POLIS &&  typeof (confirmData) == 'object') {
                 try {
                     let savedTx: any;
@@ -333,12 +332,12 @@ export class PolisProvider extends JsonRpcEngine {
             }
         }catch (e:any) {
             this.emit(PolisEvents.TX_CONFIRM_DIALOG_EVENT, {walletType:this.walletType, action: 'close'});
-    
-            if(e && e.message){
-                res.error = e.message
-            }else{
-                res.error  = e;
-            }
+            // if(e && e.message){
+            //     res.error = e.message
+            // }else{
+            res.error  = e;
+            this.emit(PolisEvents.ERROR_EVENT, e);
+            // }
         }
     }
     

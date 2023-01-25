@@ -32,6 +32,7 @@ export const PolisEvents = {
   TX_CONFIRM_EVENT:'tx-confirm',
   CHAIN_CHANGED_EVENT: 'chainChanged',
   ACCOUNTS_CHANGED_EVENT: 'accountsChanged',
+  ERROR_EVENT:'error'
 }
 export const signingMethods = [
   "eth_sendTransaction",
