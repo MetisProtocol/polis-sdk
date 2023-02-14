@@ -44,6 +44,7 @@ export class PolisClient {
                 apiHost: this.apiHost,
                 chainId: this.chainId,
                 token: this.token,
+                debug: opts.debug
                 // showLoading:opts.showLoading
             })
         }

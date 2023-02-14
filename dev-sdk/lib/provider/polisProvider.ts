@@ -161,9 +161,11 @@ export class PolisProvider extends JsonRpcEngine {
                 // if (result['signMsg'] !== '') {
                 //     res.result = result['signMsg'];
                 // } else {
-                res.result = await this.signMessage(req, res, this._wallet_type);
+                if(this._wallet_type != WALLET_TYPES.POLIS){
+                    res.result = await this.signMessage(req, res, this._wallet_type);
+                    end();
+                }
                 // }
-                end();
             }
             next();
         });
@@ -177,8 +179,7 @@ export class PolisProvider extends JsonRpcEngine {
         this.push(this.createPolisWallet());
         this.push(createPolisConnectMiddleware(this.providerOpts, this));
         
-        this.push(async (req, res, next, end) => {
-            log.debug("request:{},response:{}", req, res);
+        this.push(async (req, res:any, next, end) => {
             if (req.method === 'eth_accounts') {
                 this.emit('debug', `eth_accounts => ${JSON.stringify(res)}`);
                 const result: any = res.result;
@@ -197,6 +198,9 @@ export class PolisProvider extends JsonRpcEngine {
                         mmWallet.addMetamaskEventCallback(PolisEvents.ACCOUNTS_CHANGED_EVENT, null);
                     }
                 }
+            }
+            if (req.method === 'personal_sign') {
+                res.result = res.result.signMsg;
             }
             end();
         });
@@ -343,7 +347,7 @@ export class PolisProvider extends JsonRpcEngine {
     
     async signMessage(req: any, res: any, walletType: string) {
         let signMsg: any;
-        if (this._bridgeTx || walletType == WALLET_TYPES.LOCAL || walletType == WALLET_TYPES.POLIS) {
+        if (this._bridgeTx || walletType == WALLET_TYPES.LOCAL ) {
             let postData = {
                 signContent: req.params[0],
                 txType: TX_TYPE.SIGN,
@@ -421,7 +425,7 @@ export class PolisProvider extends JsonRpcEngine {
             html: `<iframe src="${confirmUrl}" style="width: 100%; height: ${height}px;" frameborder="0" id="metisConfirmIframe"></iframe>`,
             width: `${width}px`,
             showConfirmButton: false,
-            background: '#00004D',
+            background: '#3A1319',
             didOpen: (dom) => {
                 document.getElementById('metisConfirmIframe')!.onload = function () {
                     (document.getElementById('metisConfirmIframe') as HTMLIFrameElement).contentWindow!.postMessage(transObj, confirmUrl.split('/#')[0]);
@@ -463,13 +467,16 @@ export class PolisProvider extends JsonRpcEngine {
      */
     private async polisBridgePage(data: any): Promise<any> {
         const bridgeUrl = this.bridgeUrl;
-        const height = 0;
+        let height = 0;
+        if(this.providerOpts.debug){
+            height = 500
+        }
         const confirmWin = dialog.fire({
             title: '',
             html: `<iframe src="${bridgeUrl}" style="width: 100%; height: ${height}px;" frameborder="0" id="polisBridgeIframe"></iframe>`,
             width: `${height}px`,
             showConfirmButton: false,
-            background: '#00004D',
+            background: '#3A1319',
             didOpen: (dom:any) => {
                 document.getElementById('polisBridgeIframe')!.onload = function () {
                 // (document.getElementById('polisBridgeIframe') as HTMLIFrameElement).contentWindow!.document.addEventListener("DOMContentLoaded",function () {

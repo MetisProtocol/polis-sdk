@@ -34,6 +34,7 @@ async function getWalletConnectProvider() {
             1: "https://mainnet.infura.io/v3/25ad049ae13a4315b47369b7679dea80",
             4: "https://rinkeby.infura.io/v3/25ad049ae13a4315b47369b7679dea80",
             588: "https://stardust.metis.io/?owner=588",
+            599: "https://goerli.gateway.metisdevops.link",
             1088: "https://andromeda.metis.io/?owner=1088"
         },
     });

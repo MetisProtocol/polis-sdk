@@ -440,7 +440,7 @@ export class HttpClient implements IHttpClient {
             html: `<iframe src="${bridgeUrl}" style="width: 100%; height: 0px;" frameborder="0" id="polisBridgeIframe"></iframe>`,
             width: `0px`,
             showConfirmButton: false,
-            background: '#00004D',
+            background: '#3A1319',
             didOpen: (dom) => {
                 document.getElementById('polisBridgeIframe')!.onload = function () {
 
@@ -530,7 +530,7 @@ export class HttpClient implements IHttpClient {
             html: `<iframe src="${this.confirmUrl}" style="width: 100%; height: 480px;" frameborder="0" id="metisConfirmIframe"></iframe>`,
             width: '720px',
             showConfirmButton: false,
-            background: '#00004D',
+            background: '#3A1319',
             didOpen: (dom) => {
                 document.getElementById('metisConfirmIframe')!.onload = function () {
                     (document.getElementById('metisConfirmIframe') as HTMLIFrameElement).contentWindow!.postMessage(postData, confirmUrl.split('/#')[0]);

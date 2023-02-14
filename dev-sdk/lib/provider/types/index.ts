@@ -14,6 +14,7 @@ export interface IPolisClientOpts{
     chainId:number,
     apiHost?:string,
     showLoading?:boolean,
+    debug?:boolean
 }
 
 export interface IPolisOauth2Opts{
@@ -36,6 +37,7 @@ export interface IPolisProviderOpts extends IPolisEndPoints{
     chainId:number,
     maxAttempts?:number,
     headers?:object,
+    debug?:boolean
     // showLoading?:boolean
 }
 
