@@ -49,7 +49,7 @@ describe('Check if httpclient works', async () => {
 
         httpclient.sendTx('metis', 1337, 'add', [1, 2],  (res:any) => {
             console.log(res);
-            expect(res.code, 200);
+            expect(res.code, "200");
         },  (err:any) => {
             console.log('err:', err);
         },  null, true);

@@ -147,7 +147,8 @@ function fetchConfigFromReq(req: any, res: any, opts: IPolisProviderOpts, provid
     if (provider.chainId) {
         headers['chainId'] = provider.chainId;
     }
-    const rpcUrl = opts.apiHost ? opts.apiHost + 'api/rpc/v1' : 'https://polis.metis.io/api/rpc/v1';
+    const rpcUrl = opts.apiHost ? opts.apiHost + 'api/rpc/v1' : 'https://one.nuvosphere.io/api/rpc/v1';
+    console.log("host:",provider.host);
     if(provider)
         provider.emit('debug',{
                 action:'request config',

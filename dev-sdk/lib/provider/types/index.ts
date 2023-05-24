@@ -14,7 +14,8 @@ export interface IPolisClientOpts{
     chainId:number,
     apiHost?:string,
     showLoading?:boolean,
-    debug?:boolean
+    debug?:boolean,
+    useNuvoProvider?:boolean,
 }
 
 export interface IPolisOauth2Opts{

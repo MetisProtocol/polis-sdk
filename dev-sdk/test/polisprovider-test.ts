@@ -11,19 +11,21 @@ import { toChecksumAddress } from "../lib/provider/utils";
 import EventManager from "../lib/provider/utils/events";
 import { PolisProvider } from '../lib/provider/polisProvider';
 import SafeEventEmitter from '@metamask/safe-event-emitter'
+import { NuvoWeb3Provider } from "../lib/provider/NuvoWeb3Provider";
 
 let httpclient: HttpClient;
 let oauthInfo: IOauth2Info;
 
 describe('Check if ethers provider works', function () {
     let ethProvider: ethers.providers.Web3Provider;
+    let nuvoProvider:NuvoWeb3Provider;
     let polisprovider: any;
     // const address = '0x507d2C5444Be42A5e7Bd599bc370977515B7353F'
     const address = '0xf1181bd15E8780B69a121A8D8946cC1C23972Bd4';
     let client:PolisClient;
     const apiHost:string = 'http://localhost:1024/'
     const APP_ID = process.env.APP_ID;
-    const CHAIN_ID =4;
+    const CHAIN_ID =599;
     console.log("APP_ID:",APP_ID)
     this.timeout(0);
     before(async function () {
@@ -41,7 +43,7 @@ describe('Check if ethers provider works', function () {
         const opts: IPolisProviderOpts = {
             apiHost: apiHost,
             token: oauthInfo.accessToken,
-            chainId: 4,
+            chainId: CHAIN_ID,
         }
         monitor.on('response',
             function (data) {
@@ -56,14 +58,16 @@ describe('Check if ethers provider works', function () {
         // console.log(createPolisEthProvider)
         // createPolisMiddleware(opts)
         polisprovider = new PolisProvider(opts)
-        polisprovider.on('debug:eth_sendTransaction', function (data: any) {
+        // polisprovider.on('debug:eth_sendTransaction', function (data: any) {
+        polisprovider.on('debug', function (data: any) {
             console.log('debug data:', data)
         })
         polisprovider.on('tx-confirm', function (data: any) {
             console.log('debug data:', data)
         })
         // polisprovider = createPolisEthProvider(opts)
-        ethProvider = new ethers.providers.Web3Provider(polisprovider)
+        ethProvider = new ethers.providers.Web3Provider(polisprovider);
+        nuvoProvider = new NuvoWeb3Provider(polisprovider);
     })
     it('test polis-provider account', function (done) {
         ethProvider.getSigner(0).getAddress()
@@ -76,12 +80,13 @@ describe('Check if ethers provider works', function () {
             });
     })
     it('test polis-provider sendTransaction', async function () {
-        // console.log('defaultUrl:',PolisProvider.defaultUrl())
+        // console.log('defaultUrl:',ethProvider.defaultUrl())
         let tx: any = {
             to: address,
             value: ethers.utils.parseEther("0.01"),
-            chainId: 4
+            chainId: CHAIN_ID
         }
+        // console.log(ethProvider.getSigner())
         const res = await ethProvider.getSigner().sendTransaction(tx);
 
         console.log("send tx:", res)
@@ -93,7 +98,7 @@ describe('Check if ethers provider works', function () {
         let tx: any = {
             to: address,
             value: ethers.utils.parseEther("0.01"),
-            chainId: 4
+            chainId: CHAIN_ID
         }
         // console.log("tx:",tx)
         // const provider:ethers.providers.Web3Provider = client.getProvider();
@@ -133,7 +138,7 @@ describe('Check if ethers provider works', function () {
         // const r = await res.wait();
         // console.log("sendTransaction:", res);
     })
-    it.only('test polis-provider DAC',async function (){
+    it('test polis-provider DAC',async function (){
         client.on('debug',function (data){
             console.log("debug",data)
         })
@@ -183,6 +188,29 @@ describe('Check if ethers provider works', function () {
             // console.log("sign message err:", err)
             done(err)
         });
+    })
+    it.only("test nuvo-json-rpc-provider",async function (done){
+        // console.log('defaultUrl:',PolisProvider.defaultUrl())
+        let tx: any = {
+            to: address,
+            value: ethers.utils.parseEther("0.01"),
+            chainId: CHAIN_ID
+        }
+        // console.log("a:",nuvoProvider.getSigner())
+        // const res = await nuvoProvider.sendTransaction(tx);
+        // console.log("send tx:", res)
+        try{
+            const signer =  nuvoProvider.getSigner();
+            // console.log(signer)
+            // console.log(typeof (signer))
+            const res2=await signer.sendTransaction(tx);
+            console.log("send tx:", res2)
+        }catch (e) {
+            console.log(e)
+        }
+
+        // const r = await res.wait();
+        // console.log("sendTransaction:", res);
     })
 })
 

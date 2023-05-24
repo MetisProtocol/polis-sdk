@@ -305,7 +305,7 @@ httpClient.estimateGasAsync(`DOMAIN`, `CHAIN_ID`, `FUNCTION_NAME`, ARGUMENTS, DI
 ```
 // if DISABLE_TOOLTIP = true, sdk will not show error and success message at right top on page
     let data = {
-      chainid:1337,
+      chainId:1337,
       txhash:'0xf76f794bd3504df1f000000099b305e66efa244b58abd50bewe'
     }
     httpClient.getTxLogsAsync(data).then((result) => {
