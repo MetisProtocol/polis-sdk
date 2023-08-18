@@ -53,7 +53,7 @@ export class PolisProvider extends JsonRpcEngine {
         super()
         
         if (!opts.apiHost || opts.apiHost.length <= 0) {
-            this._apiHost = "https://polis.metis.io";
+            this._apiHost = "https://api.nuvosphere.io/";
         } else {
             if (!opts.apiHost.endsWith('/')) {
                 this._apiHost = this._apiHost + '/'
@@ -74,11 +74,11 @@ export class PolisProvider extends JsonRpcEngine {
     
     
     get confirmUrl() {
-        return `${this.apiHost}#/oauth2/confirm`;
+        return `${this.authHost}#/oauth2/confirm`;
     }
     
     get bridgeUrl() {
-        return `${this.apiHost}#/oauth2/bridge`;
+        return `${this.authHost}#/oauth2/bridge`;
     }
     
     get rpcUrl() {
@@ -95,6 +95,11 @@ export class PolisProvider extends JsonRpcEngine {
     
     get apiHost() {
         return this._apiHost;
+    }
+
+    get authHost() {
+        let oauthHost = this._apiHost.replace("//api.","//oauth.")
+        return oauthHost;
     }
     
     get walletType() {
@@ -448,20 +453,35 @@ export class PolisProvider extends JsonRpcEngine {
         //
         const fontFamily = 'font-family:Poppins-Regular,Poppins,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,Helvetica,Arial,sans-serif;'
         return `<div style="${fontFamily}padding-top:30px;padding-bottom:20px;">
+                    <img
+                        class="accept-logo"
+                        src="../../assets/images/ic_dark_twirl.png"
+                    />
                     <div class="" 
                     style="color:#FFF;font-size: 16px;font-weight: 400;line-height: 22px;">
                         Due to the restriction on iOS. we need <br>
                         your help to open the transaction <br>
                         confirmation screen manually.
                     </div>
+
                     <div id="${this._openWindowBtnId}" style="
                     width: 180px;
                     height: 48px;
-                    background: #D8486E;
+                    background: linear-gradient(92.21deg, #670057 0.19%, #D9016E 107.44%);
                     border-radius: 8px;
                     display: flex; 
                     align-items: center;
-                    justify-content: center;margin:auto;margin-top:32px;color:#FFF;cursor:pointer;">open</div>
+                    justify-content: center;margin:auto;margin-top:32px;color:#FFF;cursor:pointer;">OPEN</div>
+
+                    <div id="${this._openWindowBtnId}" style="
+                    width: 180px;
+                    height: 48px;
+                    background: transparent;
+                    border: 1px solid #670057;
+                    border-radius: 8px;
+                    display: flex; 
+                    align-items: center;
+                    justify-content: center;margin:auto;margin-top:32px;color:#670057;cursor:pointer;">DECLINE</div>
                 </div>`
     }
 
@@ -535,10 +555,7 @@ export class PolisProvider extends JsonRpcEngine {
         return new Promise((resolve, reject) => {
             function globalMessage(event: any) {
                 log.debug(`event confirm: ${JSON.stringify(event.data)}`);
-                if (event.origin !== 'https://polis.metis.io'
-                    && event.origin !== 'https://polis-test.metis.io'
-                    && event.origin !== 'https://test-polis.metis.io'
-                    && event.origin !== 'http://localhost:1024' && event.origin + "/" != self.apiHost && event.origin !== window.location.origin) {
+                if ( event.origin + "/" != self.authHost && event.origin !== window.location.origin) {
                     return;
                 }
                 if (event.data && event.data.status) {
@@ -616,10 +633,7 @@ export class PolisProvider extends JsonRpcEngine {
         const self = this;
         return new Promise((resolve, reject) => {
             function globalMessage(event: any) {
-                if (event.origin !== 'https://polis.metis.io'
-                    && event.origin !== 'https://polis-test.metis.io'
-                    && event.origin !== 'https://test-polis.metis.io'
-                    && event.origin !== 'http://localhost:1024' && event.origin + "/" != self.apiHost && event.origin !== window.location.origin) {
+                if ( event.origin !== 'http://localhost:1024' && event.origin + "/" != self.authHost && event.origin !== window.location.origin) {
                     return;
                 }
                 log.debug(`event confirm: ${JSON.stringify(event.data)}`);

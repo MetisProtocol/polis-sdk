@@ -36,6 +36,8 @@
     <br/>
     <div>
       <el-button type="primary" @click="startOauth2WC">Polis Client WalletConnect</el-button>
+      <el-button type="primary" @click="testIframe(apiHost)">testIframe</el-button>
+      <el-button type="primary" @click="testIframe('https://me.qa.nuvosphere.io')">testIframe2</el-button>
     </div>
   </div>
 </template>
@@ -44,6 +46,7 @@
 // @ is an alias to /src
 import {Oauth2Client, WebSocketClient} from '@metis.io/middleware-client'
 import {PolisClient} from '@metis.io/middleware-client'
+import Swal from 'sweetalert2';
 
 export default {
   name: 'Home',
@@ -108,7 +111,7 @@ export default {
       this.savePreCode();
       const authOps = {
         appId: this.appId,
-        returnUrl: "http://polis.localhost:8000/#/wc",
+        returnUrl: "http://localhost:8000/#/wc",
         switchAccount: this.switchAccount
       }
       //user login auth
@@ -121,6 +124,46 @@ export default {
         console.log("err:",err);
         alert(err)
       })
+    },
+    testIframe(host=this.apiHost) {
+      // open a dialog
+      // alert(host)
+      let width = 720;
+      let height = 480;
+      const confirmUrl = host
+
+      const dialog = Swal.mixin({
+        customClass:{
+          container: 'nuvo-test-swal2-container'
+        },
+        showClass: {
+          popup: 'nuvo-test-swal2-show',
+        }
+      });
+      const confirmWin = dialog.fire({
+        title: '<span style="font-size: 24px;font-weight: bold;color: #FFFFFF;font-family: Helvetica-Bold, Helvetica">Request Confirmation</span>',
+        html: `<iframe src="${confirmUrl}" style="width: 100%; height: ${height}px;" frameborder="0" id="metisConfirmIframe"></iframe>`,
+        width: `${width}px`,
+        showConfirmButton: false,
+        background: '#3A1319',
+        didOpen: (dom) => {
+          document.getElementById('metisConfirmIframe').onload = function () {
+            // (document.getElementById('metisConfirmIframe') as HTMLIFrameElement).contentWindow!.postMessage(transObj, confirmUrl.split('/#')[0]);
+            console.log("token:",document.cookie['token'])
+          };
+        },
+        didClose: () => {
+          window.postMessage({status: 'ERROR', code: 1000, message: 'CANCEL'}, window.location.origin);
+        },
+      });
+      const self = this;
+      return new Promise((resolve, reject) => {
+        function globalMessage(event) {
+
+        }
+
+        window.addEventListener('message', globalMessage, false);
+      });
     }
   }
 }

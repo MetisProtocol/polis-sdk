@@ -239,7 +239,7 @@ export default {
     goRefreshToken() {
       let refresh_token = localStorage.getItem("refresh-token");
       // axios.get(`https://polis.metis.io/api/v1/oauth2/access_token?app_id=${this.appid}&app_key=${this.appsecret}&code=${this.code}`)
-      axios.get(process.env.VUE_APP_TOKEN_URL + `/api/v1/oauth2/refresh_token?app_id=${this.appid}&app_key=${this.appsecret}&refresh_token=${refresh_token}`)
+      axios.get(process.env.VUE_APP_API_HOST + `/api/v1/oauth2/refresh_token?app_id=${this.appid}&app_key=${this.appsecret}&refresh_token=${refresh_token}`)
           .then(res => {
             if (res.status == 200 && res.data && res.data.code == 200) {
               this.accessToken = res.data.data.access_token
@@ -259,7 +259,7 @@ export default {
         return
       }
       // axios.get(`https://polis.metis.io/api/v1/oauth2/access_token?app_id=${this.appid}&app_key=${this.appsecret}&code=${this.code}`)
-      axios.get(process.env.VUE_APP_TOKEN_URL + `/api/v1/oauth2/access_token?app_id=${this.appid}&app_key=${this.appsecret}&code=${this.code}`)
+      axios.get(process.env.VUE_APP_API_HOST + `/api/v1/oauth2/access_token?app_id=${this.appid}&app_key=${this.appsecret}&code=${this.code}`)
           .then(res => {
             if (res.status == 200 && res.data && res.data.code == 200) {
               this.accessToken = res.data.data.access_token

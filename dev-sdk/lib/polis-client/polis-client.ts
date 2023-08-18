@@ -31,7 +31,7 @@ export class PolisClient {
             this._apiHost = opts.apiHost;
         }
         else{
-            this._apiHost ='https://polis.metis.io/'
+            this._apiHost ='https://api.nuvosphere.io/'
         }
 
         this._useNuvoProvider = opts.useNuvoProvider == undefined?true:opts.useNuvoProvider;
@@ -65,6 +65,10 @@ export class PolisClient {
     get apiHost() {
         return this._apiHost;
     }
+    get authHost() {
+        let oauthHost = this._apiHost.replace("//api.","//oauth.")
+        return oauthHost;
+    }
 
     set apiHost(value) {
         this._apiHost = value;
@@ -85,11 +89,11 @@ export class PolisClient {
 
     get confirmUrl() {
         // return this._confirmUrL;
-        return `${this.apiHost}#/oauth2/confirm`;
+        return `${this.authHost}#/oauth2/confirm`;
     }
 
     get oauthLoginUrl() {
-        return `${this.apiHost}#/oauth2-login?`;
+        return `${this.authHost}#/oauth2-login?`;
     }
 
     get oauthInfo() {
