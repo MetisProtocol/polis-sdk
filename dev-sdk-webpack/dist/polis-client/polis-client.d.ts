@@ -14,6 +14,7 @@ export declare class PolisClient {
     private _useNuvoProvider;
     constructor(opts: IPolisClientOpts);
     get apiHost(): string;
+    get authHost(): string;
     set apiHost(value: string);
     get chainId(): number;
     set chainId(value: number);

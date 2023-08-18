@@ -23,6 +23,7 @@ export declare class PolisProvider extends JsonRpcEngine {
     get chainId(): number;
     set chainId(value: number);
     get apiHost(): string;
+    get authHost(): string;
     get walletType(): string;
     static defaultUrl(): string;
     request(request: {
