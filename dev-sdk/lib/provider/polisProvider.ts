@@ -18,7 +18,7 @@ import { PolisOauth2Client } from "./PolisOauth2Client";
 import Swal from "sweetalert2";
 import errors from "./erros";
 import WalletConnect from "@walletconnect/client";
-import wallectConnector from "./wallectConnector";
+// import wallectConnector from "./wallectConnector";
 import log from "./utils/log"
 import sdkErrors from "./erros";
 import { TX_TYPE } from "../provider/utils";
@@ -32,6 +32,7 @@ let _nextId = 1;
 export class PolisProvider extends JsonRpcEngine {
     _confirmUrl: string = '';
     _apiHost: string = '';
+    _oauthHost:string =''
     host:string = '';
     _chainId: number = -1;
     _wallet_type: string = '';
@@ -59,6 +60,14 @@ export class PolisProvider extends JsonRpcEngine {
                 this._apiHost = this._apiHost + '/'
             }
             this._apiHost = opts.apiHost;
+        }
+        if(!!!opts.oauthHost){
+            this._oauthHost = this._apiHost.replace("://api.","://oauth.");
+            if (!opts.apiHost.endsWith('/')) {
+                this._apiHost = this._apiHost + '/'
+            }
+        }else{
+            this._oauthHost = opts.oauthHost
         }
         this.host = this._apiHost;
         this._chainId = opts.chainId;
@@ -98,8 +107,7 @@ export class PolisProvider extends JsonRpcEngine {
     }
 
     get authHost() {
-        let oauthHost = this._apiHost.replace("//api.","//oauth.")
-        return oauthHost;
+        return this._oauthHost;
     }
     
     get walletType() {
@@ -135,20 +143,21 @@ export class PolisProvider extends JsonRpcEngine {
         this._bridgeTx = bridgeMetamask;
         this.providerOpts.token = token;
         //if (!bridgeMetamask) {
-        if (needWcSession) {
-            this.initWcConnector(true);
-        }
+
+        // if (needWcSession) {
+        //     this.initWcConnector(true);
+        // }
         this.initWallet()
     }
     
-    private initWcConnector(init = false) {
-        if (!this._wcConnector || init) {
-            this._wcConnector = wallectConnector.getWalletConnector();
-        }
-        if (!this._wcConnector.connected) {
-            this._wcConnector.createSession();
-        }
-    }
+    // private initWcConnector(init = false) {
+    //     if (!this._wcConnector || init) {
+    //         this._wcConnector = wallectConnector.getWalletConnector();
+    //     }
+    //     if (!this._wcConnector.connected) {
+    //         this._wcConnector.createSession();
+    //     }
+    // }
     
     /**
      *
@@ -373,11 +382,11 @@ export class PolisProvider extends JsonRpcEngine {
             signMsg = await mmWallet.signMessage(req.params[0]);
             return signMsg;
         } else if (walletType == "WALLETCONNECT") {
-            this.initWcConnector();
-            if (this._wcConnector) {
-                const signMsg = wallectConnector.signMessage(this._wcConnector, req.params[0]);
-                return signMsg;
-            }
+            // this.initWcConnector();
+            // if (this._wcConnector) {
+            //     const signMsg = wallectConnector.signMessage(this._wcConnector, req.params[0]);
+            //     return signMsg;
+            // }
         }
         return Promise.reject(errors.ACCOUNT_NOT_EXIST);
         
@@ -415,10 +424,10 @@ export class PolisProvider extends JsonRpcEngine {
     private initConfirmWindow(iframeId: string, transObj: BridgeTransactionInfo,confirmUrl: string) {
         let confirmWindow: any = null
         const handleWindowLoad = function(event: any) {
-            log.debug('received message', event)
+            // log.debug('received message', event)
             if(event.data && event.data.type && event.data.type === 'windowLoaded') {
                 confirmWindow!.postMessage(transObj, confirmUrl.split('/#')[0]);
-                log.debug('postMessage', transObj)
+                // log.debug('postMessage', transObj)
                 // loaded send message  and remove listen
                 window.removeEventListener('message', handleWindowLoad, false);
             }
@@ -449,6 +458,7 @@ export class PolisProvider extends JsonRpcEngine {
             }
         }
     }
+
     private safariaOpenWindowDom() {
         //
         const fontFamily = 'font-family:Poppins-Regular,Poppins,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,Helvetica,Arial,sans-serif;'
@@ -495,6 +505,7 @@ export class PolisProvider extends JsonRpcEngine {
         return !(isMobile() && isIOS() && (walletType === WALLET_TYPES.LOCAL))
         // return false
     }
+
     private async polisConfirm(tx: DomainTransactionInfo, accessToken: string, confirmUrl: string): Promise<any> {
         const useIframe = this.checkNeedUserIframe(tx.walletType)
         const transObj:BridgeTransactionInfo = {
@@ -514,19 +525,23 @@ export class PolisProvider extends JsonRpcEngine {
             act:tx.act,
             blsWalletOpen:tx.blsWalletOpen,
         };
-        let width = 720;
-        let height = 480;
+        let width = 700;
+        let height = 680;
+        // check for openLink
+        if(this.providerOpts.openLink){
+            return this.providerOpts.openLink(confirmUrl, transObj,tx.walletType)
+        }
         // open a dialog
         let dialogOptions = useIframe ? {
-            title: '<span style="font-size: 24px;font-weight: bold;color: #FFFFFF;font-family: Helvetica-Bold, Helvetica">Request Confirmation</span>',
-            html: `<iframe src="${confirmUrl}" style="width: 100%; height: ${height}px;" frameborder="0" id="metisConfirmIframe"></iframe>`,
+            title: '',
+            html: `<iframe src="${confirmUrl}" style="width: 100%; height: ${height}px; overflow: scroll" frameborder="0" id="metisConfirmIframe"></iframe>`,
             width: `${width}px`,
         }: {
             html: `${this.safariaOpenWindowDom()}`,
         }
         dialog.fire({
             ...dialogOptions,
-            background: '#3A1319',
+            background: '#151515',
             showConfirmButton: false,
             didOpen: (dom) => {
                 // send Message
@@ -536,6 +551,7 @@ export class PolisProvider extends JsonRpcEngine {
                 window.postMessage({status: 'ERROR', code: 1000, message: 'CANCEL'}, window.location.origin);
             }
         })
+
         // const confirmWin = dialog.fire({
         //     title: '<span style="font-size: 24px;font-weight: bold;color: #FFFFFF;font-family: Helvetica-Bold, Helvetica">Request Confirmation</span>',
         //     html: `<iframe src="${confirmUrl}" style="width: 100%; height: ${height}px;" frameborder="0" id="metisConfirmIframe"></iframe>`,
@@ -578,7 +594,12 @@ export class PolisProvider extends JsonRpcEngine {
      * @private
      */
     private async polisBridgePage(data: any): Promise<any> {
+
         const bridgeUrl = this.bridgeUrl;
+        // check for openLink
+        if(this.providerOpts.openLink){
+           return this.providerOpts.openLink(bridgeUrl, data, data.walletType)
+        }
         // const bridgeUrl = "http://localhost:1024/#/oauth2/bridge"
         const useIframe = this.checkNeedUserIframe(data.walletType)
         // let height = 0;
@@ -597,7 +618,7 @@ export class PolisProvider extends JsonRpcEngine {
             }
         } : {
             html: `${this.safariaOpenWindowDom()}`,
-            background: '#3A1319',
+            background: '#151515',
         }
         dialog.fire({
                 title: '',
@@ -708,40 +729,40 @@ export class PolisProvider extends JsonRpcEngine {
             //todo not auth
             return Promise.reject(errors.TOKEN_IS_EMPTY);
         }
-        this.initWcConnector();
-        if (this._wcConnector) {
-            const txhash = await wallectConnector.sendTrans(this._wcConnector,
-                tx);
-            const recipt = '';
-            let savedTx: any;
-            tx.domain = '';
-            try {
-                savedTx = await this.saveTx(this.apiHost, this.token, 'save_app_tx', tx, true);
-                this.emit('debug', Object.assign({}, {action: 'save-tx'}, savedTx));
-                if (savedTx == null) {
-                    // server save tx error ,also return but status = IN_PROGRESSING because tx had success
-                    savedTx = {
-                        tx: txhash,
-                        status: 'SERVER_ERROR',
-                        chainId: tx.chainId,
-                        domain: tx.domain,
-                        data: 'ok',
-                        act: 'CREATE',
-                        value: tx.value,
-                    };
-                    this.emit('warning', Object.assign({}, {action: 'save-tx error'}, savedTx));
-                    return Promise.resolve(txhash);
-                    // return new Promise<any>((resolve, reject) => {
-                    //     reject(savedTx);
-                    // });
-                }
-            } catch (e) {
-                this.emit('warning', Object.assign({}, {action: 'save-tx error'}, e));
-                return Promise.resolve(txhash);
-            }
-            this.emit('debug', Object.assign({}, {action: 'save-tx surccess'}, savedTx));
-            return Promise.resolve(txhash);
-        }
+        // this.initWcConnector();
+        // if (this._wcConnector) {
+        //     const txhash = await wallectConnector.sendTrans(this._wcConnector,
+        //         tx);
+        //     const recipt = '';
+        //     let savedTx: any;
+        //     tx.domain = '';
+        //     try {
+        //         savedTx = await this.saveTx(this.apiHost, this.token, 'save_app_tx', tx, true);
+        //         this.emit('debug', Object.assign({}, {action: 'save-tx'}, savedTx));
+        //         if (savedTx == null) {
+        //             // server save tx error ,also return but status = IN_PROGRESSING because tx had success
+        //             savedTx = {
+        //                 tx: txhash,
+        //                 status: 'SERVER_ERROR',
+        //                 chainId: tx.chainId,
+        //                 domain: tx.domain,
+        //                 data: 'ok',
+        //                 act: 'CREATE',
+        //                 value: tx.value,
+        //             };
+        //             this.emit('warning', Object.assign({}, {action: 'save-tx error'}, savedTx));
+        //             return Promise.resolve(txhash);
+        //             // return new Promise<any>((resolve, reject) => {
+        //             //     reject(savedTx);
+        //             // });
+        //         }
+        //     } catch (e) {
+        //         this.emit('warning', Object.assign({}, {action: 'save-tx error'}, e));
+        //         return Promise.resolve(txhash);
+        //     }
+        //     this.emit('debug', Object.assign({}, {action: 'save-tx surccess'}, savedTx));
+        //     return Promise.resolve(txhash);
+        // }
         return Promise.reject("unkown error");
     }
     

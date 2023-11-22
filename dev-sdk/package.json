@@ -1,13 +1,13 @@
 {
   "name": "@metis.io/middleware-client",
-  "version": "1.1.33",
+  "version": "1.1.38",
   "description": "",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "prepublishOnly": "npm run build",
     "dev": "rm -fr ./dist && tsc -p tsconfig.dev.json",
-    "build": "rm -fr ./dist && tsc -p tsconfig.prod.json",
+    "build": " tsc -p tsconfig.prod.json",
     "build:win": "tsc -p tsconfig.prod.json",
     "example": "npm run dev && node ./example/index.js",
     "test": "cross-env NODE_ENV=test ts-mocha -r jsdom-global/register -p ./tsconfig.test.json ./test/*",

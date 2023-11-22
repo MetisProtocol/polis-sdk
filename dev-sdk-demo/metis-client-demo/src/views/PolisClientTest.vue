@@ -123,6 +123,7 @@ export default {
       // appid: "611cc74139481700e8885bc5",
       // appsecret: "40133e2b4a0e4dadbb4a867e2494c152",
       apiHost: process.env.VUE_APP_API_HOST,
+      oauthHost: process.env["VUE_APP_TOKEN_URL"],
       code: '',
       accessToken: '',
       refreshToken: '',
@@ -217,10 +218,12 @@ export default {
     },
     initPolisClient(data) {
       this.oauthInfo = data;
+      console.log("oauthHost:",this.oauthHost)
       this.polisclient = new PolisClient({
         appId: this.appid,
         chainId: this.chainid,
         apiHost: this.apiHost,
+        oauthHost: this.oauthHost+"/",
         // useNuvoProvider: true
       })
 
@@ -577,7 +580,7 @@ export default {
 
     },
     async callContractPayable() {
-
+     console.log( this.polisclient.oauthHost);
       this.polisclient.changeChain(this.chainid);
       await this.polisclient.connect(this.oauthInfo,this.bridgeMetaMask)
       // test dac
@@ -715,30 +718,6 @@ export default {
       })
       //end
 
-    },
-    async callContractMethod() {
-      const address = "0x091Ea445cf67a24233E9aa7775CAb69AA7976432"
-      const abi = [{
-        "inputs": [],
-        "name": "invitationCode",
-        "outputs": [
-          {
-            "internalType": "uint32",
-            "name": "",
-            "type": "uint32"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      }]
-      const polisClient = new PolisClient({
-        appId: appid,
-        chainId: 599,
-        apiHost: polisURL
-      });
-      polisClient.connect(JSON.parse(localStorage.authInfo),this.bridgeMetaMask);
-      const daiContract = polisClient.getContract(address, abi);
-      const re = await daiContract["invitationCode"]();
     },
     async signer(){
       const signer =  await this.polisclient.web3Provider.getSigner();

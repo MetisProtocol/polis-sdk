@@ -4,14 +4,15 @@ class Endpoints {
     wsServer: string = 'wss://polis.metis.io/wss/mts-l2';
     // confirmUrl: string =  '#/oauth2/confirm-tx';
     confirmUrl: string =  '#/oauth2/confirm';
-    apiHost = 'https://polis.metis.io/';
+    apiHost = 'https://api.nuvosphere.io/';
+    authHost = this.apiHost.replace("//api.","//auth.")
     oauthRedirectUrl: string = '#/oauth2-login?';
     // testWsServer: string = 'ws://test-polis.metis.io:5000/wss/mts-l2';
     // testConfirmUrl: string = 'https://test-polis.metis.io/#/oauth2/confirm-tx';
     // testApiHost = 'https://test-polis.metis.io';
     // testOauthRedirectUrl: string = 'https://test-polis.metis.io/#/oauth2-login?';
 
-    constructor(host:string="https://polis.metis.io/") {
+    constructor(host:string="https://api.nuvosphere.io/") {
         if (!host.endsWith('/')) {
             host = host + '/'
         }
@@ -25,12 +26,12 @@ class Endpoints {
 
     getConfirmUrl() {
 
-        return this.apiHost + this.confirmUrl;
+        return this.authHost + this.confirmUrl;
     }
 
     getBridgeUrl() {
 
-        return this.apiHost + "#/oauth2/bridge";
+        return this.authHost + "#/oauth2/bridge";
     }
 
     getApiHost() {
@@ -38,7 +39,8 @@ class Endpoints {
     }
 
     getOauthRedirectUrl() {
-        return this.apiHost + this.oauthRedirectUrl;
+
+        return this.authHost + this.oauthRedirectUrl;
     }
 }
 

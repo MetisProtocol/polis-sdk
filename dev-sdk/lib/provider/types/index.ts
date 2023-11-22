@@ -7,15 +7,18 @@ import { PolisSdkError } from "../erros";
 export interface IPolisEndPoints {
     wsServer?:string,
     apiHost:string,
+    oauthHost?:string,
 }
-
+export type TOpenLink = (link:string, postData: object,wallet_type:string)=> void
 export interface IPolisClientOpts{
     appId:string,
     chainId:number,
     apiHost?:string,
+    oauthHost?:string,
     showLoading?:boolean,
     debug?:boolean,
     useNuvoProvider?:boolean,
+    openLink?: TOpenLink
 }
 
 export interface IPolisOauth2Opts{
@@ -39,6 +42,7 @@ export interface IPolisProviderOpts extends IPolisEndPoints{
     maxAttempts?:number,
     headers?:object,
     debug?:boolean
+    openLink?: TOpenLink
     // showLoading?:boolean
 }
 

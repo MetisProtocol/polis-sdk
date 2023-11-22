@@ -38,6 +38,9 @@
       <el-button type="primary" @click="startOauth2WC">Polis Client WalletConnect</el-button>
       <el-button type="primary" @click="testIframe(apiHost)">testIframe</el-button>
       <el-button type="primary" @click="testIframe('https://me.qa.nuvosphere.io')">testIframe2</el-button>
+
+      <el-button type="primary" @click="postMessage">RN post message</el-button>
+      <el-button type="primary" @click="openWin">openWin</el-button>
     </div>
   </div>
 </template>
@@ -58,6 +61,7 @@ export default {
       returnUrl: process.env.VUE_APP_RETURN_URL,
       returnUrl2: process.env.VUE_APP_RETURN_URL2,
       apiHost: process.env.VUE_APP_API_HOST,
+      oauthHost:process.env.VUE_APP_TOKEN_URL,
       switchAccount: false,
       chainId:4,
       pre_code:"",
@@ -71,16 +75,32 @@ export default {
       appId:this.appId,
       chainId:this.chainId,
       // apiHost: "https://polis-test.meits.io",
-      apiHost: this.apiHost
-
+      apiHost: this.apiHost,
+      oauthHost: this.oauthHost,
     }
     this.polisclient = new PolisClient(opts);
     this.polisclient.on('debug',function (data){
       console.log("debug",data)
     })
-
+    const test = function(event) {
+      console.log('receive document', event)
+    }
+    const test2 = function(event) {
+      console.log('receive window', event)
+    }
+    document.removeEventListener('message', test);
+    document.addEventListener('message', test);
+    window.removeEventListener('message', test2);
+    window.addEventListener('message', test2);
+    // this.openWin()
   },
   methods: {
+    openWin() {
+      window.open('https://www.baidu.com')
+    },
+    postMessage() {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'ERROR', code: 1000, message: 'CANCEL' }))
+    },
     startOauth2() {
       console.log(this.appId);
       let oauth2Client = new Oauth2Client(this.apiHost);
@@ -104,6 +124,7 @@ export default {
         returnUrl: this.returnUrl2,
         switchAccount: this.switchAccount
       }
+      console.log("authOps:",authOps)
       //user login auth
       this.polisclient.startOauth2(authOps);
     },

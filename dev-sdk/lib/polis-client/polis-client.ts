@@ -6,7 +6,7 @@ import { PolisProvider } from "../provider/polisProvider";
 import { PolisOauth2Client } from "../provider/PolisOauth2Client";
 import request from "../request";
 import { addToken } from "../metamask";
-import wallectConnector from "../provider/wallectConnector";
+// import wallectConnector from "../provider/wallectConnector";
 import log from "../provider/utils/log";
 import { WALLET_TYPES } from "../provider/utils";
 import { NuvoWeb3Provider } from "../provider/NuvoWeb3Provider";
@@ -15,6 +15,7 @@ export class PolisClient {
 
     private _confirmUrL: string = '';
     private _apiHost: string = '';
+    private _oauthHost: string = '';
     private _oauthLoginuRL:   string = ''
     private _appId: string = ''
     private _authInfo?: IOauth2Info;
@@ -33,7 +34,13 @@ export class PolisClient {
         else{
             this._apiHost ='https://api.nuvosphere.io/'
         }
+        if(!!!opts.oauthHost){
+            this._oauthHost = this._apiHost.replace("//api.","//oauth.")
+        }else{
+            this._oauthHost = opts.oauthHost
+        }
 
+        console.log("aouth:",this._oauthHost)
         this._useNuvoProvider = opts.useNuvoProvider == undefined?true:opts.useNuvoProvider;
         console.log("_nuvoProvider:",this._useNuvoProvider);
         /**
@@ -47,9 +54,11 @@ export class PolisClient {
         if (!!!this._ethProvider){
             this.initProvider({
                 apiHost: this.apiHost,
+                oauthHost: this.authHost,
                 chainId: this.chainId,
                 token: this.token,
-                debug: opts.debug
+                debug: opts.debug,
+                openLink: opts?.openLink ?? null
                 // showLoading:opts.showLoading
             })
         }
@@ -66,8 +75,7 @@ export class PolisClient {
         return this._apiHost;
     }
     get authHost() {
-        let oauthHost = this._apiHost.replace("//api.","//oauth.")
-        return oauthHost;
+       return this._oauthHost;
     }
 
     set apiHost(value) {
@@ -645,15 +653,15 @@ export class PolisClient {
     private async initJsonRPCProvider(wcSession=false){
         if(this._useNuvoProvider){
             if(wcSession){
-                const wcProvider = await wallectConnector.getWalletConnectProvider();
-                this._ethProvider = new NuvoWeb3Provider(wcProvider,'any');
+                // const wcProvider = await wallectConnector.getWalletConnectProvider();
+                // this._ethProvider = new NuvoWeb3Provider(wcProvider,'any');
             }else{
                 this._ethProvider = new NuvoWeb3Provider(this._polisprovider,'any');
             }
         }else{
             if(wcSession){
-                const wcProvider = await wallectConnector.getWalletConnectProvider();
-                this._ethProvider = new ethers.providers.Web3Provider(wcProvider,'any');
+                // const wcProvider = await wallectConnector.getWalletConnectProvider();
+                // this._ethProvider = new ethers.providers.Web3Provider(wcProvider,'any');
             }else{
                 this._ethProvider = new ethers.providers.Web3Provider(this._polisprovider,'any');
             }

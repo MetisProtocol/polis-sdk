@@ -1,29 +1,27 @@
 
-# Polis dev sdk
+# Nuvo  sdk
 
-Polis dev sdk contains Oauth2Client, HttpClient
-
-## new 
-PolisClient,PolisProvider
 
 ## Sdk install
 ```
 npm install --save-dev @metis.io/middleware-client
 ```
 
-#Polis Provider
+#1、Use Ethers Web3Provider
 
+## step 1  IPolisProviderOpts
 ```javascript
 
 const opts: IPolisProviderOpts = {
-            apiHost: 'http://polis-test.metis.io/',  // api host
+            apiHost: 'https://api.nuvosphere.io/',  // api host
+            oauthHost?: "", //oauth login host, options
             token?: {accessToken}, //optional oauth2 access token 
             chainId: 4,
         }
 const polisprovider = new PolisProvider(opts)
 ```
-#Polis Web3 Provider
-## ethers.js
+##step 2 Ethers Web3 Provider
+### ethers.js
 
 ```javascript
 ethersProvider = new ethers.providers.Web3Provider(polisprovider)
@@ -31,8 +29,9 @@ ethersProvider = new ethers.providers.Web3Provider(polisprovider)
 
 
 
-#Polis Client
+#2、 Use Polis Client
 
+## step 1 
 ```javascript
 
 const clientOps:IPolisClientOpts = {
@@ -69,7 +68,7 @@ this.polisclient.on('accountsChanged', (account) => {
 });
 ```
 
-##  get Web3 Provider
+##step 2  get Web3 Provider
 ```javascript
 ethersProvider=client.web3Provider // ethers.providers.Web3Provider
 
@@ -100,7 +99,7 @@ await daiContract.name();
 
 
 -----
-## Oauth2 client
+# Oauth2 client
 
 ### import & create
 ```
@@ -169,7 +168,7 @@ The `APPID` and `RETURN URL` can get from Polis Developer User page
 ```
 
 
-## Http client
+## Http client　［Deprecated］
 
 ### import & create
 ```
