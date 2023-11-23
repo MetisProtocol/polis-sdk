@@ -3,6 +3,8 @@
 1. cd dev-sdk
 2. npm i
 3. npm run build
+4. rm -rf ../dev-sdk-webpack/dist
+5. mv dist ../dev-sdk-webpack/dist
 
 ## build webpack
 
