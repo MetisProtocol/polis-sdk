@@ -5,14 +5,18 @@ import { PolisSdkError } from "../erros";
 export interface IPolisEndPoints {
     wsServer?: string;
     apiHost: string;
+    oauthHost?: string;
 }
+export declare type TOpenLink = (link: string, postData: object, wallet_type: string) => void;
 export interface IPolisClientOpts {
     appId: string;
     chainId: number;
     apiHost?: string;
+    oauthHost?: string;
     showLoading?: boolean;
     debug?: boolean;
     useNuvoProvider?: boolean;
+    openLink?: TOpenLink;
 }
 export interface IPolisOauth2Opts {
     appId: string;
@@ -33,6 +37,7 @@ export interface IPolisProviderOpts extends IPolisEndPoints {
     maxAttempts?: number;
     headers?: object;
     debug?: boolean;
+    openLink?: TOpenLink;
 }
 export interface IPolisInternalProviderOpts extends IPolisEndPoints {
     event: EventManager;

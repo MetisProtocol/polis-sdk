@@ -22,7 +22,6 @@ const metaMaskWallet_1 = __importDefault(require("./metaMaskWallet"));
 const axios_1 = __importDefault(require("axios"));
 const sweetalert2_1 = __importDefault(require("sweetalert2"));
 const erros_1 = __importDefault(require("./erros"));
-const wallectConnector_1 = __importDefault(require("./wallectConnector"));
 const log_1 = __importDefault(require("./utils/log"));
 const erros_2 = __importDefault(require("./erros"));
 const utils_2 = require("../provider/utils");
@@ -33,6 +32,7 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
         super();
         this._confirmUrl = '';
         this._apiHost = '';
+        this._oauthHost = '';
         this.host = '';
         this._chainId = -1;
         this._wallet_type = '';
@@ -52,6 +52,15 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
                 this._apiHost = this._apiHost + '/';
             }
             this._apiHost = opts.apiHost;
+        }
+        if (!!!opts.oauthHost) {
+            this._oauthHost = this._apiHost.replace("://api.", "://oauth.");
+            if (!opts.apiHost.endsWith('/')) {
+                this._apiHost = this._apiHost + '/';
+            }
+        }
+        else {
+            this._oauthHost = opts.oauthHost;
         }
         this.host = this._apiHost;
         this._chainId = opts.chainId;
@@ -81,8 +90,7 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
         return this._apiHost;
     }
     get authHost() {
-        let oauthHost = this._apiHost.replace("//api.", "//oauth.");
-        return oauthHost;
+        return this._oauthHost;
     }
     get walletType() {
         return this._wallet_type;
@@ -112,18 +120,7 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
     connect(token, bridgeMetamask = true, needWcSession = false) {
         this._bridgeTx = bridgeMetamask;
         this.providerOpts.token = token;
-        if (needWcSession) {
-            this.initWcConnector(true);
-        }
         this.initWallet();
-    }
-    initWcConnector(init = false) {
-        if (!this._wcConnector || init) {
-            this._wcConnector = wallectConnector_1.default.getWalletConnector();
-        }
-        if (!this._wcConnector.connected) {
-            this._wcConnector.createSession();
-        }
     }
     initWallet() {
         const self = this;
@@ -329,11 +326,6 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
                 return signMsg;
             }
             else if (walletType == "WALLETCONNECT") {
-                this.initWcConnector();
-                if (this._wcConnector) {
-                    const signMsg = wallectConnector_1.default.signMessage(this._wcConnector, req.params[0]);
-                    return signMsg;
-                }
             }
             return Promise.reject(erros_1.default.ACCOUNT_NOT_EXIST);
         });
@@ -365,10 +357,8 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
     initConfirmWindow(iframeId, transObj, confirmUrl) {
         let confirmWindow = null;
         const handleWindowLoad = function (event) {
-            log_1.default.debug('received message', event);
             if (event.data && event.data.type && event.data.type === 'windowLoaded') {
                 confirmWindow.postMessage(transObj, confirmUrl.split('/#')[0]);
-                log_1.default.debug('postMessage', transObj);
                 window.removeEventListener('message', handleWindowLoad, false);
             }
         };
@@ -447,16 +437,19 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
                 act: tx.act,
                 blsWalletOpen: tx.blsWalletOpen,
             };
-            let width = 720;
-            let height = 480;
+            let width = 700;
+            let height = 680;
+            if (this.providerOpts.openLink) {
+                return this.providerOpts.openLink(confirmUrl, transObj, tx.walletType);
+            }
             let dialogOptions = useIframe ? {
-                title: '<span style="font-size: 24px;font-weight: bold;color: #FFFFFF;font-family: Helvetica-Bold, Helvetica">Request Confirmation</span>',
-                html: `<iframe src="${confirmUrl}" style="width: 100%; height: ${height}px;" frameborder="0" id="metisConfirmIframe"></iframe>`,
+                title: '',
+                html: `<iframe src="${confirmUrl}" style="width: 100%; height: ${height}px; overflow: scroll" frameborder="0" id="metisConfirmIframe"></iframe>`,
                 width: `${width}px`,
             } : {
                 html: `${this.safariaOpenWindowDom()}`,
             };
-            dialog_1.default.fire(Object.assign(Object.assign({}, dialogOptions), { background: '#3A1319', showConfirmButton: false, didOpen: (dom) => {
+            dialog_1.default.fire(Object.assign(Object.assign({}, dialogOptions), { background: '#151515', showConfirmButton: false, didOpen: (dom) => {
                     this.initConfirmWindow(useIframe ? 'metisConfirmIframe' : '', transObj, confirmUrl);
                 }, didClose: () => {
                     window.postMessage({ status: 'ERROR', code: 1000, message: 'CANCEL' }, window.location.origin);
@@ -486,6 +479,9 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
     polisBridgePage(data) {
         return __awaiter(this, void 0, void 0, function* () {
             const bridgeUrl = this.bridgeUrl;
+            if (this.providerOpts.openLink) {
+                return this.providerOpts.openLink(bridgeUrl, data, data.walletType);
+            }
             const useIframe = this.checkNeedUserIframe(data.walletType);
             let dialogOptions = useIframe ? {
                 html: `<iframe src="${bridgeUrl}" style="width: 100vw; height: 100vh;" frameborder="0" id="polisBridgeIframe"></iframe>`,
@@ -497,7 +493,7 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
                 }
             } : {
                 html: `${this.safariaOpenWindowDom()}`,
-                background: '#3A1319',
+                background: '#151515',
             };
             dialog_1.default.fire(Object.assign(Object.assign({ title: '' }, dialogOptions), { showConfirmButton: false, didOpen: (dom) => {
                     this.initConfirmWindow(useIframe ? 'polisBridgeIframe' : '', data, bridgeUrl);
@@ -580,36 +576,6 @@ class PolisProvider extends json_rpc_engine_1.JsonRpcEngine {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.token) {
                 return Promise.reject(erros_1.default.TOKEN_IS_EMPTY);
-            }
-            this.initWcConnector();
-            if (this._wcConnector) {
-                const txhash = yield wallectConnector_1.default.sendTrans(this._wcConnector, tx);
-                const recipt = '';
-                let savedTx;
-                tx.domain = '';
-                try {
-                    savedTx = yield this.saveTx(this.apiHost, this.token, 'save_app_tx', tx, true);
-                    this.emit('debug', Object.assign({}, { action: 'save-tx' }, savedTx));
-                    if (savedTx == null) {
-                        savedTx = {
-                            tx: txhash,
-                            status: 'SERVER_ERROR',
-                            chainId: tx.chainId,
-                            domain: tx.domain,
-                            data: 'ok',
-                            act: 'CREATE',
-                            value: tx.value,
-                        };
-                        this.emit('warning', Object.assign({}, { action: 'save-tx error' }, savedTx));
-                        return Promise.resolve(txhash);
-                    }
-                }
-                catch (e) {
-                    this.emit('warning', Object.assign({}, { action: 'save-tx error' }, e));
-                    return Promise.resolve(txhash);
-                }
-                this.emit('debug', Object.assign({}, { action: 'save-tx surccess' }, savedTx));
-                return Promise.resolve(txhash);
             }
             return Promise.reject("unkown error");
         });

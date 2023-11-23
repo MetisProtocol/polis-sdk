@@ -2,6 +2,7 @@ declare class Endpoints {
     wsServer: string;
     confirmUrl: string;
     apiHost: string;
+    authHost: string;
     oauthRedirectUrl: string;
     constructor(host?: string);
     getWsServer(): string;

@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 export declare class PolisClient {
     private _confirmUrL;
     private _apiHost;
+    private _oauthHost;
     private _oauthLoginuRL;
     private _appId;
     private _authInfo?;

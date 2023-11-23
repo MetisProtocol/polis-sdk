@@ -43,14 +43,15 @@ const polisProvider_1 = require("../provider/polisProvider");
 const PolisOauth2Client_1 = require("../provider/PolisOauth2Client");
 const request_1 = __importDefault(require("../request"));
 const metamask_1 = require("../metamask");
-const wallectConnector_1 = __importDefault(require("../provider/wallectConnector"));
 const log_1 = __importDefault(require("../provider/utils/log"));
 const utils_1 = require("../provider/utils");
 const NuvoWeb3Provider_1 = require("../provider/NuvoWeb3Provider");
 class PolisClient {
     constructor(opts) {
+        var _a;
         this._confirmUrL = '';
         this._apiHost = '';
+        this._oauthHost = '';
         this._oauthLoginuRL = '';
         this._appId = '';
         this._chainId = -1;
@@ -61,6 +62,13 @@ class PolisClient {
         else {
             this._apiHost = 'https://api.nuvosphere.io/';
         }
+        if (!!!opts.oauthHost) {
+            this._oauthHost = this._apiHost.replace("//api.", "//oauth.");
+        }
+        else {
+            this._oauthHost = opts.oauthHost;
+        }
+        console.log("aouth:", this._oauthHost);
         this._useNuvoProvider = opts.useNuvoProvider == undefined ? true : opts.useNuvoProvider;
         console.log("_nuvoProvider:", this._useNuvoProvider);
         this._appId = opts.appId;
@@ -71,9 +79,11 @@ class PolisClient {
         if (!!!this._ethProvider) {
             this.initProvider({
                 apiHost: this.apiHost,
+                oauthHost: this.authHost,
                 chainId: this.chainId,
                 token: this.token,
-                debug: opts.debug
+                debug: opts.debug,
+                openLink: (_a = opts === null || opts === void 0 ? void 0 : opts.openLink) !== null && _a !== void 0 ? _a : null
             });
         }
         const self = this;
@@ -82,8 +92,7 @@ class PolisClient {
         return this._apiHost;
     }
     get authHost() {
-        let oauthHost = this._apiHost.replace("//api.", "//oauth.");
-        return oauthHost;
+        return this._oauthHost;
     }
     set apiHost(value) {
         this._apiHost = value;
@@ -507,8 +516,6 @@ class PolisClient {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._useNuvoProvider) {
                 if (wcSession) {
-                    const wcProvider = yield wallectConnector_1.default.getWalletConnectProvider();
-                    this._ethProvider = new NuvoWeb3Provider_1.NuvoWeb3Provider(wcProvider, 'any');
                 }
                 else {
                     this._ethProvider = new NuvoWeb3Provider_1.NuvoWeb3Provider(this._polisprovider, 'any');
@@ -516,8 +523,6 @@ class PolisClient {
             }
             else {
                 if (wcSession) {
-                    const wcProvider = yield wallectConnector_1.default.getWalletConnectProvider();
-                    this._ethProvider = new ethers_1.ethers.providers.Web3Provider(wcProvider, 'any');
                 }
                 else {
                     this._ethProvider = new ethers_1.ethers.providers.Web3Provider(this._polisprovider, 'any');

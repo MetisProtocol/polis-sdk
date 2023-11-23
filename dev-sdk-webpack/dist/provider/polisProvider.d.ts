@@ -5,6 +5,7 @@ import WalletConnect from "@walletconnect/client";
 export declare class PolisProvider extends JsonRpcEngine {
     _confirmUrl: string;
     _apiHost: string;
+    _oauthHost: string;
     host: string;
     _chainId: number;
     _wallet_type: string;
@@ -31,7 +32,6 @@ export declare class PolisProvider extends JsonRpcEngine {
         params?: Array<any>;
     }): Promise<any>;
     connect(token: string, bridgeMetamask?: boolean, needWcSession?: boolean): void;
-    private initWcConnector;
     private initWallet;
     private createPolisWallet;
     confirmTrans(req: any, res: any): Promise<void>;
