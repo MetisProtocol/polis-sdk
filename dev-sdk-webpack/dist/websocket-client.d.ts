@@ -1,0 +1,33 @@
+import { IWebsocketClient } from './interfaces';
+import Endpoints from './endpoints';
+import { Socket } from 'socket.io-client';
+import { Oauth2Client } from './oauth2-client';
+export declare class WebSocketClient implements IWebsocketClient {
+    appId: string;
+    accessToken: string;
+    refreshToken: string;
+    endpoints: Endpoints;
+    server: string;
+    confirmUrl: string;
+    socket?: Socket;
+    onMessage?: Function;
+    onJson?: Function;
+    onConnect?: Function;
+    onDisconnect?: Function;
+    onEmitChain?: Function;
+    confirmArray: Array<any>;
+    oAuth2Client: Oauth2Client;
+    swalPromise: any;
+    constructor(appId: string, accessToken: string, refreshToken: string, expiresIn: number, server?: string, env?: string);
+    log(...obj: any[]): void;
+    handleRefreshToken(callback?: Function): void;
+    connect(onEmitChain: Function, onMessage?: Function, onJson?: Function, onConnect?: Function, onDisconnect?: Function): Boolean;
+    sendTx(domain: string, chainid: number, fun: string, args?: any[]): void;
+    monitorTx(domain: string, chainid: number, tx: string, seconds: number): void;
+    queryTx(chainid: number, tx: string): void;
+    beforeConfirm(domain: string, chainid: number, address: string, fun: string, args?: any[], gas?: string, gasPrice?: string, fee?: string): Promise<any>;
+    closeMonitor(tx: string): void;
+    removeConfirmMap(tx: string): void;
+    disconnect(): void;
+    closeConfirmDialog(): void;
+}
